@@ -17,7 +17,7 @@ type RecoveryTab = "email" | "password"
 
 const RECOVERY_TABS: SegmentedControlItem<RecoveryTab>[] = [
   { value: "email", label: "이메일 찾기" },
-  { value: "password", label: "비밀번호 재설정" },
+  { value: "password", label: "비밀번호 찾기" },
 ]
 
 export const Route = createFileRoute("/account-recovery")({
