@@ -121,7 +121,7 @@ export function FindEmailForm({ onFound }: FindEmailFormProps) {
         />
       </div>
       <RecoveryFormActions
-        submitLabel="아이디 찾기"
+        submitLabel="이메일 찾기"
         canSubmit={canFind}
         isSubmitting={verification.pendingAction === "verify"}
       />
