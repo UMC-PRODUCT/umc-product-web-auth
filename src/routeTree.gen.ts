@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './pages/__root'
 import { Route as SignupRouteImport } from './pages/signup'
 import { Route as LoginRouteImport } from './pages/login'
 import { Route as ChallengerRouteImport } from './pages/challenger'
+import { Route as AccountRecoveryRouteImport } from './pages/account-recovery'
 import { Route as IndexRouteImport } from './pages/index'
 
 const SignupRoute = SignupRouteImport.update({
@@ -29,6 +30,11 @@ const ChallengerRoute = ChallengerRouteImport.update({
   path: '/challenger',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AccountRecoveryRoute = AccountRecoveryRouteImport.update({
+  id: '/account-recovery',
+  path: '/account-recovery',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -37,12 +43,14 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/account-recovery': typeof AccountRecoveryRoute
   '/challenger': typeof ChallengerRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/account-recovery': typeof AccountRecoveryRoute
   '/challenger': typeof ChallengerRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
@@ -50,20 +58,28 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/account-recovery': typeof AccountRecoveryRoute
   '/challenger': typeof ChallengerRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/challenger' | '/login' | '/signup'
+  fullPaths: '/' | '/account-recovery' | '/challenger' | '/login' | '/signup'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/challenger' | '/login' | '/signup'
-  id: '__root__' | '/' | '/challenger' | '/login' | '/signup'
+  to: '/' | '/account-recovery' | '/challenger' | '/login' | '/signup'
+  id:
+    | '__root__'
+    | '/'
+    | '/account-recovery'
+    | '/challenger'
+    | '/login'
+    | '/signup'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AccountRecoveryRoute: typeof AccountRecoveryRoute
   ChallengerRoute: typeof ChallengerRoute
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
@@ -92,6 +108,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChallengerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/account-recovery': {
+      id: '/account-recovery'
+      path: '/account-recovery'
+      fullPath: '/account-recovery'
+      preLoaderRoute: typeof AccountRecoveryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -104,6 +127,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AccountRecoveryRoute: AccountRecoveryRoute,
   ChallengerRoute: ChallengerRoute,
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,

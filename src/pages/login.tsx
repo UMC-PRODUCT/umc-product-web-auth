@@ -115,6 +115,9 @@ function LoginPage() {
             </Button>
             <TextLinkPair
               neutralLabel="아이디/비밀번호 찾기"
+              onNeutralClick={() =>
+                navigate({ to: "/account-recovery", search: { tab: "email" } })
+              }
               brandLabel="회원가입"
               onBrandClick={() => navigate({ to: "/signup" })}
             />

@@ -37,6 +37,9 @@ function LoginHubPage() {
           </Button>
           <TextLinkPair
             neutralLabel="계정 찾기"
+            onNeutralClick={() =>
+              navigate({ to: "/account-recovery", search: { tab: "email" } })
+            }
             brandLabel="회원가입"
             onBrandClick={() => navigate({ to: "/signup" })}
           />
