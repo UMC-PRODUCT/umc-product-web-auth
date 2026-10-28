@@ -12,6 +12,11 @@ const OAUTH_LABELS: Record<OAuthProvider, string> = {
   kakao: "카카오 로그인",
 }
 
+const PRESS_OVERLAY_ON_LIGHT =
+  "hover:shadow-[inset_0_0_0_100px_rgb(0_0_0/0.05)] active:shadow-[inset_0_0_0_100px_rgb(0_0_0/0.1)]"
+const PRESS_OVERLAY_ON_DARK =
+  "hover:shadow-[inset_0_0_0_100px_rgb(255_255_255/0.15)] active:shadow-[inset_0_0_0_100px_rgb(255_255_255/0.25)]"
+
 const WIDE_BUTTONS: Record<
   OAuthProvider,
   { logo: string; width: number; height: number; className: string }
@@ -20,32 +25,36 @@ const WIDE_BUTTONS: Record<
     logo: appleBlackLogo,
     width: 20.4,
     height: 24,
-    className:
-      "gap-4 border border-neutral-weak-200 bg-white text-neutral-default-900",
+    className: `gap-4 border border-neutral-weak-200 bg-white text-neutral-default-900 ${PRESS_OVERLAY_ON_LIGHT}`,
   },
   google: {
     logo: googleLogo,
     width: 20,
     height: 20,
-    className:
-      "gap-3 border border-neutral-weak-200 bg-white text-neutral-default-900",
+    className: `gap-3 border border-neutral-weak-200 bg-white text-neutral-default-900 ${PRESS_OVERLAY_ON_LIGHT}`,
   },
   kakao: {
     logo: kakaoLogo,
     width: 19,
     height: 19,
-    className: "gap-[13px] bg-[#fee500] text-black/85",
+    className: `gap-[13px] bg-[#fee500] text-black/85 ${PRESS_OVERLAY_ON_LIGHT}`,
   },
 }
 
 const ICON_BUTTONS: Record<OAuthProvider, { logo: string; className: string }> =
   {
-    apple: { logo: appleWhiteLogo, className: "bg-black" },
+    apple: {
+      logo: appleWhiteLogo,
+      className: `bg-black ${PRESS_OVERLAY_ON_DARK}`,
+    },
     google: {
       logo: googleLogo,
-      className: "border border-neutral-weaker-100 bg-white",
+      className: `border border-neutral-weaker-100 bg-white ${PRESS_OVERLAY_ON_LIGHT}`,
     },
-    kakao: { logo: kakaoLargeLogo, className: "bg-[#fee500]" },
+    kakao: {
+      logo: kakaoLargeLogo,
+      className: `bg-[#fee500] ${PRESS_OVERLAY_ON_LIGHT}`,
+    },
   }
 
 const ICON_LOGO_SIZE = 24
