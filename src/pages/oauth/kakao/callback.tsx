@@ -47,14 +47,14 @@ function KakaoCallbackPage() {
         color: "error",
         icon: <CheckCircleIcon />,
       })
-      void navigate({ to: "/login" })
+      void navigate({ to: "/login", replace: true })
     }
 
     const params = new URLSearchParams(window.location.search)
     const error = params.get("error")
     if (error) {
       if (error === "access_denied") {
-        void navigate({ to: "/login" })
+        void navigate({ to: "/login", replace: true })
         return
       }
       showError(FAILED_MESSAGE)
@@ -89,7 +89,7 @@ function KakaoCallbackPage() {
           if (decision.kind === "denied") {
             await denyAdminAccessAndClearSession()
             markAdminAccessDenied()
-            await navigate({ to: "/login" })
+            await navigate({ to: "/login", replace: true })
             return
           }
           if (decision.kind === "allowed") {

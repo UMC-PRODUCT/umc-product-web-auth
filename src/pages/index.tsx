@@ -130,7 +130,7 @@ function LoginHubPage() {
               color="brand"
               size="md"
               className="w-full"
-              onClick={() => navigate({ to: "/login" })}
+              onClick={() => navigate({ to: "/login", replace: true })}
             >
               UMC 계정 로그인
             </Button>

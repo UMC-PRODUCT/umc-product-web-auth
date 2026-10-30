@@ -59,7 +59,7 @@ function AuthorizePage() {
             if (!gateToken) {
               // 조기 검사 토큰이 없으면 운영진 여부를 알 수 없어 재로그인을 유도한다.
               await denyAdminAccessAndClearSession()
-              await navigate({ to: "/login" })
+              await navigate({ to: "/login", replace: true })
               return
             }
             const decision = await evaluateAdminAccess(
@@ -75,10 +75,14 @@ function AuthorizePage() {
             }
           }
 
-          window.location.assign(authorizeUrl(getAuthEnv().apiBaseUrl, request))
+          // assign 이면 /authorize 가 히스토리에 남아, 클라이언트에서
+          // 뒤로가기 시 다시 이 화면으로 온다. replace 로 현재 칸을 덮는다.
+          window.location.replace(
+            authorizeUrl(getAuthEnv().apiBaseUrl, request),
+          )
         } catch (error) {
           if (error instanceof ApiError && error.status === 401) {
-            await navigate({ to: "/" })
+            await navigate({ to: "/", replace: true })
             return
           }
           setIsChecking(false)

@@ -30,7 +30,8 @@ export function resolveSsoSocialLogin(
 }
 
 export function socialSuccessNavigateOptions(next: "/authorize" | "/") {
-  return { to: next } as const
+  // 로그인·콜백 등 중간 화면이 히스토리에 남지 않도록 replace
+  return { to: next, replace: true } as const
 }
 
 export async function completeKakaoSsoLogin(params: {

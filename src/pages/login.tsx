@@ -85,9 +85,9 @@ function LoginPage() {
 
       await loginBySsoEmail(email, password)
       if (readAuthorizeRequest()) {
-        await navigate({ to: "/authorize" })
+        await navigate({ to: "/authorize", replace: true })
       } else {
-        await navigate({ to: "/" })
+        await navigate({ to: "/", replace: true })
       }
     } catch (error) {
       if (

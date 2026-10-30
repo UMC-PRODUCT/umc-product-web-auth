@@ -38,7 +38,7 @@ function LogoutPage() {
         window.location.assign(returnTo)
         return
       }
-      await navigate({ to: "/login" })
+      await navigate({ to: "/login", replace: true })
     })()
     return () => {
       cancelled = true
