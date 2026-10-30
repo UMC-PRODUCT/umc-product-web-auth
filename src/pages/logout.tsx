@@ -4,6 +4,8 @@ import { useEffect } from "react"
 import { logoutSso } from "@/api/sso"
 import { getAuthEnv, isAllowedReturnTo } from "@/lib/auth-env"
 
+import { AuthSpinner } from "./-components/AuthSpinner"
+
 type LogoutSearch = {
   return_to?: string
 }
@@ -43,5 +45,5 @@ function LogoutPage() {
     }
   }, [navigate, returnTo])
 
-  return <p>로그아웃 중</p>
+  return <AuthSpinner label="로그아웃 중" />
 }

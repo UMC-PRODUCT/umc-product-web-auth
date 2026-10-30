@@ -4,8 +4,12 @@ import { useEffect, useState } from "react"
 
 import { ApiError } from "@/api/http"
 import { fetchSsoSession, type SsoSession } from "@/api/sso"
+import { readAuthorizeRequest } from "@/lib/authorize-request"
+import { resolveLoginAudience } from "@/lib/login-audience"
 import { useSocialLogin } from "@/lib/oauth/useSocialLogin"
 
+import { AdminAccessDeniedDialog } from "./-components/AdminAccessDeniedDialog"
+import { AuthSpinner } from "./-components/AuthSpinner"
 import { BrandLogo } from "./-components/BrandLogo"
 import { OAuthLoginButton, type OAuthProvider } from "./-components/OAuthButton"
 import { OrDivider } from "./-components/OrDivider"
@@ -16,10 +20,12 @@ export const Route = createFileRoute("/")({
 })
 
 const HUB_PROVIDERS: OAuthProvider[] = ["apple", "google", "kakao"]
+const COPYRIGHT = "© 2026 UMC Product All rights reserved."
 
 function LoginHubPage() {
   const navigate = useNavigate()
-  const { start } = useSocialLogin()
+  const { start, adminDeniedOpen, setAdminDeniedOpen } = useSocialLogin()
+  const audience = resolveLoginAudience(readAuthorizeRequest()?.client_id)
   const [session, setSession] = useState<SsoSession | null | undefined>(
     undefined,
   )
@@ -48,67 +54,101 @@ function LoginHubPage() {
     }
   }, [])
 
+  const deniedDialog = (
+    <AdminAccessDeniedDialog
+      open={adminDeniedOpen}
+      onOpenChange={setAdminDeniedOpen}
+    />
+  )
+
   if (statusError) {
-    return <p>로그인 상태를 확인하지 못했습니다.</p>
+    return (
+      <>
+        <p>로그인 상태를 확인하지 못했습니다.</p>
+        {deniedDialog}
+      </>
+    )
   }
 
   if (session) {
     return (
-      <div className="flex w-full max-w-[360px] flex-col items-center gap-6">
-        <BrandLogo />
-        <p className="text-body-2-regular text-neutral-default-900">
-          로그인되어 있습니다.
-        </p>
-        <Button
-          color="brand"
-          onClick={() => navigate({ to: "/logout" })}
-          size="md"
-          variant="weak"
-        >
-          로그아웃
-        </Button>
-      </div>
+      <>
+        <div className="flex w-full max-w-[360px] flex-col items-center gap-6">
+          <BrandLogo audience={audience} surface="hub" />
+          <p className="text-body-2-regular text-neutral-default-900">
+            로그인되어 있습니다.
+          </p>
+          <Button
+            color="brand"
+            onClick={() => navigate({ to: "/logout" })}
+            size="md"
+            variant="weak"
+          >
+            로그아웃
+          </Button>
+        </div>
+        {deniedDialog}
+      </>
     )
   }
 
   if (session === undefined) {
-    return <p>로그인 확인 중</p>
+    return (
+      <>
+        <AuthSpinner label="로그인 확인 중" />
+        {deniedDialog}
+      </>
+    )
   }
 
   return (
-    <div className="flex min-h-[500px] w-full max-w-[360px] flex-col items-center gap-16">
-      <BrandLogo />
-      <div className="flex w-full flex-col items-center gap-4">
-        <div className="flex w-full flex-col gap-3">
-          {HUB_PROVIDERS.map((provider) => (
-            <OAuthLoginButton
-              key={provider}
-              provider={provider}
-              onClick={() => start(provider)}
+    <div className="flex w-full max-w-[440px] flex-col items-center gap-8 px-10 py-8">
+      <div
+        className={`flex w-full max-w-[360px] flex-col items-center ${
+          audience === "activity"
+            ? "gap-10"
+            : audience === "admin"
+              ? "gap-8"
+              : "gap-16"
+        }`}
+      >
+        <BrandLogo audience={audience} surface="hub" />
+        <div className="flex w-full flex-col items-center gap-4">
+          <div className="flex w-full flex-col gap-3">
+            {HUB_PROVIDERS.map((provider) => (
+              <OAuthLoginButton
+                key={provider}
+                provider={provider}
+                onClick={() => start(provider)}
+              />
+            ))}
+          </div>
+          <OrDivider />
+          <div className="flex w-full flex-col items-center gap-4">
+            <Button
+              variant="weak"
+              color="brand"
+              size="md"
+              className="w-full"
+              onClick={() => navigate({ to: "/login" })}
+            >
+              UMC 계정 로그인
+            </Button>
+            <TextLinkPair
+              neutralLabel="계정 찾기"
+              onNeutralClick={() =>
+                navigate({ to: "/account-recovery", search: { tab: "email" } })
+              }
+              brandLabel="회원가입"
+              onBrandClick={() => navigate({ to: "/signup" })}
             />
-          ))}
-        </div>
-        <OrDivider />
-        <div className="flex w-full flex-col items-center gap-3.5">
-          <Button
-            variant="weak"
-            color="brand"
-            size="md"
-            className="w-full"
-            onClick={() => navigate({ to: "/login" })}
-          >
-            UMC 계정 로그인
-          </Button>
-          <TextLinkPair
-            neutralLabel="계정 찾기"
-            onNeutralClick={() =>
-              navigate({ to: "/account-recovery", search: { tab: "email" } })
-            }
-            brandLabel="회원가입"
-            onBrandClick={() => navigate({ to: "/signup" })}
-          />
+          </div>
         </div>
       </div>
+      <p className="w-full text-center text-body-2-regular text-disabled">
+        {COPYRIGHT}
+      </p>
+      {deniedDialog}
     </div>
   )
 }

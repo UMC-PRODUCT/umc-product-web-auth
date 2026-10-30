@@ -3,14 +3,26 @@ import { CheckCircleIcon } from "@umc-product/icons"
 import { useToast } from "@umc-product/react"
 import { useEffect, useRef } from "react"
 
+import { loginByKakaoCredential } from "@/api/credential-auth"
+import { loginBySsoKakao, saveOAuthVerificationToken } from "@/api/sso"
 import {
-  completeKakaoSsoLogin,
+  denyAdminAccessAndClearSession,
+  evaluateAdminAccess,
+  isOAuthRegisterRequired,
+  markAdminAccessDenied,
+  saveAdminGateAccessToken,
+  shouldCheckAdminAccess,
+} from "@/lib/admin-access"
+import { readAuthorizeRequest } from "@/lib/authorize-request"
+import {
+  resolveSsoSocialLogin,
   socialSuccessNavigateOptions,
 } from "@/lib/oauth/completeSsoSocialLogin"
 import {
   consumeKakaoState,
   exchangeKakaoAuthorizationCode,
 } from "@/lib/oauth/kakaoSignIn"
+import { AuthSpinner } from "@/pages/-components/AuthSpinner"
 
 export const Route = createFileRoute("/oauth/kakao/callback")({
   component: KakaoCallbackPage,
@@ -59,7 +71,34 @@ function KakaoCallbackPage() {
     void (async () => {
       try {
         const tokens = await exchangeKakaoAuthorizationCode(code)
-        const outcome = await completeKakaoSsoLogin(tokens)
+        const clientId = readAuthorizeRequest()?.client_id
+
+        if (shouldCheckAdminAccess(clientId)) {
+          const credential = await loginByKakaoCredential(tokens)
+          if (isOAuthRegisterRequired(credential)) {
+            if (credential.oAuthVerificationToken) {
+              saveOAuthVerificationToken(credential.oAuthVerificationToken)
+            }
+            showError(REGISTER_REQUIRED_MESSAGE)
+            return
+          }
+          const decision = await evaluateAdminAccess(
+            credential.accessToken,
+            clientId,
+          )
+          if (decision.kind === "denied") {
+            await denyAdminAccessAndClearSession()
+            markAdminAccessDenied()
+            await navigate({ to: "/login" })
+            return
+          }
+          if (decision.kind === "allowed") {
+            saveAdminGateAccessToken(decision.accessToken)
+          }
+        }
+
+        const result = await loginBySsoKakao(tokens)
+        const outcome = resolveSsoSocialLogin(result)
         if (outcome.kind === "register_required") {
           showError(REGISTER_REQUIRED_MESSAGE)
           return
@@ -71,5 +110,5 @@ function KakaoCallbackPage() {
     })()
   }, [navigate, toast])
 
-  return <p>카카오 로그인 중</p>
+  return <AuthSpinner label="카카오 로그인 중" />
 }

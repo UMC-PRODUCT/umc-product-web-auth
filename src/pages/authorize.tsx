@@ -3,12 +3,22 @@ import { useEffect, useState } from "react"
 
 import { ApiError } from "@/api/http"
 import { fetchSsoSession } from "@/api/sso"
+import {
+  clearAdminGateAccessToken,
+  denyAdminAccessAndClearSession,
+  evaluateAdminAccess,
+  readAdminGateAccessToken,
+  shouldCheckAdminAccess,
+} from "@/lib/admin-access"
 import { getAuthEnv } from "@/lib/auth-env"
 import {
   authorizeUrl,
   readAuthorizeRequest,
   saveAuthorizeRequest,
 } from "@/lib/authorize-request"
+
+import { AdminAccessDeniedDialog } from "./-components/AdminAccessDeniedDialog"
+import { AuthSpinner } from "./-components/AuthSpinner"
 
 export const Route = createFileRoute("/authorize")({
   component: AuthorizePage,
@@ -18,16 +28,20 @@ const checks = new Map<string, Promise<void>>()
 
 function AuthorizePage() {
   const navigate = useNavigate()
-  const [message, setMessage] = useState("로그인 확인 중")
+  const [message, setMessage] = useState<string | null>(null)
+  const [isChecking, setIsChecking] = useState(true)
+  const [adminDeniedOpen, setAdminDeniedOpen] = useState(false)
 
   useEffect(() => {
     const search = new URLSearchParams(window.location.search)
     if ([...search.keys()].length > 0 && !saveAuthorizeRequest(search)) {
+      setIsChecking(false)
       setMessage("로그인 요청 정보가 없습니다.")
       return
     }
     const request = readAuthorizeRequest()
     if (!request) {
+      setIsChecking(false)
       setMessage("로그인 요청 정보가 없습니다.")
       return
     }
@@ -39,12 +53,35 @@ function AuthorizePage() {
       (async () => {
         try {
           await fetchSsoSession()
+
+          if (shouldCheckAdminAccess(request.client_id)) {
+            const gateToken = readAdminGateAccessToken()
+            if (!gateToken) {
+              // 조기 검사 토큰이 없으면 운영진 여부를 알 수 없어 재로그인을 유도한다.
+              await denyAdminAccessAndClearSession()
+              await navigate({ to: "/login" })
+              return
+            }
+            const decision = await evaluateAdminAccess(
+              gateToken,
+              request.client_id,
+            )
+            clearAdminGateAccessToken()
+            if (decision.kind === "denied") {
+              await denyAdminAccessAndClearSession()
+              setIsChecking(false)
+              setAdminDeniedOpen(true)
+              return
+            }
+          }
+
           window.location.assign(authorizeUrl(getAuthEnv().apiBaseUrl, request))
         } catch (error) {
           if (error instanceof ApiError && error.status === 401) {
-            await navigate({ to: "/login" })
+            await navigate({ to: "/" })
             return
           }
+          setIsChecking(false)
           setMessage("로그인 상태를 확인하지 못했습니다.")
         } finally {
           checks.delete(key)
@@ -55,5 +92,14 @@ function AuthorizePage() {
     }
   }, [navigate])
 
-  return <p>{message}</p>
+  return (
+    <>
+      {isChecking ? <AuthSpinner label="로그인 확인 중" /> : null}
+      {message ? <p>{message}</p> : null}
+      <AdminAccessDeniedDialog
+        open={adminDeniedOpen}
+        onOpenChange={setAdminDeniedOpen}
+      />
+    </>
+  )
 }
