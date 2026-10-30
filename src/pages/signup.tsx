@@ -36,7 +36,12 @@ function SignupPage() {
           <PasswordStep email={email} onDone={() => setStep("phone")} />
         )}
         {step === "phone" && (
-          <PhoneStep onVerified={() => navigate({ to: "/challenger" })} />
+          <PhoneStep
+            onVerified={() => {
+              // TODO: 가입 직후 SSO 쿠키를 받는 방법이 정해지면 여기서 authorize 로 이어간다.
+              void navigate({ to: "/login" })
+            }}
+          />
         )}
         <TextButton
           color="neutral"

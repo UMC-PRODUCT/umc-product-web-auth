@@ -7,8 +7,11 @@ import {
 } from "@umc-product/react"
 import { type FormEvent, useState } from "react"
 
-import { isAuthError, loginByEmail } from "@/api/authStub"
+import { ApiError } from "@/api/http"
+import { loginBySsoEmail } from "@/api/sso"
+import { readAuthorizeRequest } from "@/lib/authorize-request"
 import { EMAIL_FORMAT_ERROR } from "@/lib/messages"
+import { useSocialLogin } from "@/lib/oauth/useSocialLogin"
 import { useServerErrorToast } from "@/lib/useServerErrorToast"
 import { isValidEmail } from "@/lib/validation"
 
@@ -27,6 +30,7 @@ const INVALID_CREDENTIALS_MESSAGE = "아이디 또는 비밀번호가 올바르�
 function LoginPage() {
   const navigate = useNavigate()
   const showServerError = useServerErrorToast()
+  const { pendingProvider, start } = useSocialLogin()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [hasEmailError, setHasEmailError] = useState(false)
@@ -43,9 +47,17 @@ function LoginPage() {
     }
     setIsSubmitting(true)
     try {
-      await loginByEmail(email, password)
+      await loginBySsoEmail(email, password)
+      if (readAuthorizeRequest()) {
+        await navigate({ to: "/authorize" })
+      } else {
+        await navigate({ to: "/" })
+      }
     } catch (error) {
-      if (isAuthError(error, "INVALID_CREDENTIALS")) {
+      if (
+        error instanceof ApiError &&
+        (error.status === 401 || error.code === "AUTHENTICATION-0022")
+      ) {
         setHasCredentialsError(true)
       } else {
         showServerError()
@@ -109,7 +121,7 @@ function LoginPage() {
               color="brand"
               size="md"
               className="w-full"
-              isLoading={isSubmitting}
+              isLoading={isSubmitting || pendingProvider !== null}
             >
               로그인
             </Button>
@@ -127,7 +139,11 @@ function LoginPage() {
           <OrDivider />
           <div className="flex justify-center gap-8">
             {LOGIN_PROVIDERS.map((provider) => (
-              <OAuthIconButton key={provider} provider={provider} />
+              <OAuthIconButton
+                key={provider}
+                provider={provider}
+                onClick={() => start(provider)}
+              />
             ))}
           </div>
         </div>
