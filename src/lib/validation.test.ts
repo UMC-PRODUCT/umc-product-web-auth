@@ -4,6 +4,7 @@ import {
   findPasswordIssue,
   formatPhone,
   isValidEmail,
+  isValidNickname,
   isValidPhone,
   toPhoneDigits,
 } from "./validation"
@@ -16,6 +17,22 @@ describe("isValidEmail", () => {
     [`${"a".repeat(95)}@a.com`, false],
   ])("%s → %s", (email, expected) => {
     expect(isValidEmail(email)).toBe(expected)
+  })
+})
+
+describe("isValidNickname", () => {
+  it.each([
+    ["윰", true],
+    ["이방토", true],
+    ["전부연동", true],
+    ["다섯글자임", false],
+    ["이 방토", false],
+    ["umc", false],
+    ["윰씨1", false],
+    ["ㅇㅇ", false],
+    ["", false],
+  ])("%s → %s", (nickname, expected) => {
+    expect(isValidNickname(nickname)).toBe(expected)
   })
 })
 

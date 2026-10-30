@@ -3,6 +3,7 @@ import { Button } from "@umc-product/react"
 import { type ReactNode } from "react"
 
 import { type FoundAccount, type LinkedProvider } from "@/api/authStub"
+import { maskEmail } from "@/lib/maskEmail"
 
 const PROVIDER_ORDER: LinkedProvider[] = ["kakao", "apple", "google"]
 
@@ -38,7 +39,9 @@ export function FoundEmailResult({ account }: FoundEmailResultProps) {
           가입한 이메일을 찾았어요
         </h1>
         <dl className="flex w-full flex-col gap-3.5 rounded-[10px] bg-fill-neutral-weaker-50 px-[38px] py-5 text-body-1-medium">
-          <AccountInfoRow term="이메일">{account.maskedEmail}</AccountInfoRow>
+          <AccountInfoRow term="이메일">
+            {maskEmail(account.email)}
+          </AccountInfoRow>
           <AccountInfoRow term="가입일">
             {account.joinedAt.replaceAll("-", ". ")}
           </AccountInfoRow>
