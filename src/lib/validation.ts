@@ -18,7 +18,7 @@ export function isValidEmail(email: string) {
 }
 
 export function isValidNickname(nickname: string) {
-  return NICKNAME_PATTERN.test(nickname)
+  return NICKNAME_PATTERN.test(nickname.normalize("NFC"))
 }
 
 export type PasswordIssue = "policy" | "symbol"

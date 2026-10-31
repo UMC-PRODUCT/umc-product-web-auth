@@ -24,6 +24,7 @@ describe("isValidNickname", () => {
   it.each([
     ["윰", true],
     ["이방토", true],
+    ["이방토".normalize("NFD"), true],
     ["전부연동", true],
     ["다섯글자임", false],
     ["이 방토", false],

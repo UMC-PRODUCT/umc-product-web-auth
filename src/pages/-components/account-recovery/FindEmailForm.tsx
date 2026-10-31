@@ -49,7 +49,13 @@ export function FindEmailForm({ onFound }: FindEmailFormProps) {
     if (schoolId === null || !canFind) return
     setIsSubmitting(true)
     try {
-      onFound(await findEmail({ schoolId, name, nickname }))
+      onFound(
+        await findEmail({
+          schoolId,
+          name,
+          nickname: nickname.normalize("NFC"),
+        }),
+      )
     } catch (error) {
       if (isAuthError(error, "ACCOUNT_NOT_FOUND")) {
         setIsNotFoundOpen(true)
