@@ -63,7 +63,9 @@ Google과 Apple은 팝업으로 공급자 토큰(또는 Apple 인가 코드)을 
 
 `client_id`만으로 로고와 레이아웃 톤을 나누기 위해 `src/lib/login-audience.ts`의 `resolveLoginAudience`를 씁니다. 결과는 `default`, `activity`, `admin` 중 하나입니다.
 
-우선순위는 다음과 같습니다. 환경 변수 `VITE_LOGIN_UI_TEST`가 `activity` / `admin` / `default` 중 하나로 설정되어 있으면 **client_id보다 우선**하여 그 값을 강제합니다. 강제값이 없으면 `VITE_LOGIN_CLIENT_IDS_ACTIVITY`에 포함된 client_id는 `activity`, `VITE_LOGIN_CLIENT_IDS_ADMIN`에 포함된 client_id는 `admin`, 그 외는 `default`입니다. 서버에 실제로 등록된 관리자 웹 client_id는 `backoffice`이므로, 운영진 브랜딩과 권한 검사에 쓰는 목록에는 `backoffice`를 넣는 것이 맞습니다.
+우선순위는 다음과 같습니다. 환경 변수 `VITE_LOGIN_UI_TEST`가 `activity` / `admin` / `default` 중 하나로 설정되어 있으면 **client_id보다 우선**하여 그 값을 강제합니다. 강제값이 없으면 `VITE_LOGIN_CLIENT_IDS_ACTIVITY`에 포함된 client_id는 `activity`, 운영진 client_id는 `admin`, 그 외는 `default`입니다.
+
+운영진 client_id는 서버에 등록된 관리자 웹 client_id인 `backoffice`가 **코드에 고정**되어 있습니다(`BUILT_IN_ADMIN_CLIENT_IDS`). 배포 빌드에 `VITE_LOGIN_CLIENT_IDS_ADMIN`이 빠져도 운영진 검사가 꺼지지 않게 하려는 것입니다. 이 env는 운영진 client_id를 더 추가할 때만 씁니다.
 
 중요한 점은, audience는 원래 **브랜드 UI**용이라는 것입니다. 운영진 권한 검사는 이 값이 `admin`일 때만 추가로 켜지도록 연결해 두었습니다. 즉 `admin` audience는 “로고가 운영진용이다”와 “인가 코드 발급 전에 운영진인지 한 번 더 본다”를 함께 타는 스위치가 됩니다.
 
@@ -109,7 +111,7 @@ Kakao 콜백에서 거부된 경우에는 Dialog를 콜백 페이지에 바로 �
 
 ### 4.5 `/authorize` 최종 검사
 
-admin audience이고 SSO 세션이 살아 있을 때, `/authorize`는 `umc.auth.adminGateAccessToken`을 읽습니다. 토큰이 없으면 조기 검사를 거치지 않은 재진입으로 보고 SSO를 정리한 뒤 `/login`으로 보냅니다. 토큰이 있으면 `/api/v2/member/me`를 다시 확인하고, 거부이면 Dialog를 `/authorize` 위에 띄운 채 인가 URL로 이동하지 않습니다. 통과하면 토큰을 지우고 API authorize로 이동합니다.
+admin audience이고 SSO 세션이 살아 있을 때, `/authorize`는 `umc.auth.adminGateAccessToken`을 읽습니다. 토큰이 없으면 다른 서비스에서 이미 SSO 로그인한 사람이므로, SSO 세션을 그대로 두고 인가 URL로 이동합니다. 이때 운영진 판별은 클라이언트 앱(operations `/_admin` 가드)이 토큰 교환 뒤에 합니다. 토큰이 있으면 `/api/v2/member/me`를 다시 확인하고, 거부이면 Dialog를 `/authorize` 위에 띄운 채 인가 URL로 이동하지 않습니다. 통과하면 토큰을 지우고 API authorize로 이동합니다.
 
 ### 4.6 거절 UI
 
@@ -121,7 +123,7 @@ admin audience이고 SSO 세션이 살아 있을 때, `/authorize`는 `umc.auth.
 
 ## 5. 환경 변수와 로컬 검증
 
-운영진 브랜딩과 권한 검사에 쓰는 목록은 `VITE_LOGIN_CLIENT_IDS_ADMIN`입니다. 서버 등록값에 맞게 `backoffice`를 넣는 것을 권장합니다. Activity 브랜딩은 `VITE_LOGIN_CLIENT_IDS_ACTIVITY`입니다. 로컬에서 authorize 없이 UI만 보려면 `VITE_LOGIN_UI_TEST=admin`처럼 강제할 수 있으나, **배포 전에는 비워야** 합니다. UI 테스트 강제는 client_id보다 우선하므로, 켜 둔 채 배포하면 모든 진입이 admin 검사·로고를 탈 수 있습니다.
+`backoffice`는 코드에 고정되어 있어 env가 없어도 운영진 검사를 탑니다. `VITE_LOGIN_CLIENT_IDS_ADMIN`은 운영진 client_id를 더 추가할 때만 씁니다. 로컬 client_id `local`은 모든 서비스가 함께 쓰므로 이 목록에 넣으면 안 됩니다. 그래서 로컬에서는 기본적으로 인증 앱의 운영진 검사가 돌지 않습니다. Activity 브랜딩은 `VITE_LOGIN_CLIENT_IDS_ACTIVITY`입니다. 로컬에서 게이트나 UI를 확인하려면 `VITE_LOGIN_UI_TEST=admin`처럼 강제할 수 있으나, **배포 전에는 비워야** 합니다. 켜 둔 채 배포하면 멤버·Activity를 포함한 모든 진입이 admin 검사·로고를 탑니다.
 
 `VITE_UMC_HOME_URL`은 거절 Dialog의 홈 이동용입니다. API 주소는 `VITE_API_BASE_URL` 등 기존 인증 환경 설정을 따릅니다.
 
@@ -137,9 +139,9 @@ admin audience이고 SSO 세션이 살아 있을 때, `/authorize`는 `umc.auth.
 
 인가 코드 발급은 여전히 서버가 수행하며, 현재 서버 authorize 구현은 로그인만 되면 코드를 줄 수 있습니다. 프론트 분기는 사용자 경험과 불필요한 코드 발급을 줄이는 목적에 가깝습니다. 장기적으로는 서버 authorize 또는 토큰 교환 직후에 운영진 검증을 두는 편이 맞습니다.
 
-### 6.3 `/authorize`에서 게이트 토큰이 없을 때 `/login`으로 보내는 경험
+### 6.3 `/authorize`에서 게이트 토큰이 없을 때 판별을 클라이언트에 맡기는 점
 
-이미 SSO 쿠키만 있는 상태로 `/authorize`에 다시 들어오면, 액세스 토큰이 없어 운영진 여부를 알 수 없어 `/login`으로 보냅니다. 의도는 “다시 조기 검사를 타게 한다”이지만, 잠깐 빈 authorize 화면을 볼 수 있고, “권한이 없다”와 “다시 로그인해 달라”가 한눈에 구분되지 않을 수 있습니다. 전용 안내 Dialog나 서버 me 확장이 있으면 이 분기를 없애거나 문구를 명확히 할 수 있습니다.
+이미 SSO 쿠키만 있는 상태로 `/authorize`에 들어오면, 인증 앱은 액세스 토큰이 없어 운영진 여부를 알 수 없습니다. 예전에는 SSO를 끊고 `/login`으로 보냈지만, 그러면 운영진도 다시 로그인해야 하고 멤버 사이트의 SSO 세션까지 끊겼습니다. 지금은 code를 발급하고, operations가 토큰 교환 뒤 운영진이 아니면 자기 토큰만 지우고 안내 화면을 보여 줍니다. 그래서 이 경로의 비운영진에게도 operations용 토큰이 잠깐 발급됩니다. 실제 데이터 접근은 백엔드 권한 검사가 막으므로, 서버 authorize에서 운영진 검증을 하게 되면 이 분기는 필요 없어집니다.
 
 ### 6.4 `sessionStorage`에 액세스 토큰을 잠시 두는 위험
 
@@ -151,7 +153,7 @@ admin audience에서만 Apple을 두 번 띄우는 것은 공급자 제약 때�
 
 ### 6.6 audience 환경 변수와 서버 등록 client_id의 불일치
 
-문서·예시와 서버 실제 값이 어긋나면 로고만 바뀌고 권한 검사는 안 타거나, 그 반대가 될 수 있습니다. `VITE_LOGIN_CLIENT_IDS_ADMIN`은 서버 `app.sso.clients`의 `backoffice`와 맞추고, Activity용 client_id가 서버에 아직 없다면 Activity 목록은 placeholder임을 팀 내에서 명시하는 것이 좋습니다.
+운영진 client_id `backoffice`는 코드에 고정해, env 누락으로 권한 검사가 조용히 꺼지는 일은 막았습니다. 서버 `app.sso.clients`에서 관리자 웹 client_id가 바뀌면 `src/lib/login-audience.ts`의 `BUILT_IN_ADMIN_CLIENT_IDS`도 함께 바꿔야 합니다. Activity 브랜딩은 여전히 env(`VITE_LOGIN_CLIENT_IDS_ACTIVITY`)에 의존하므로, 빠지면 로고만 기본값으로 보입니다.
 
 ### 6.7 `VITE_LOGIN_UI_TEST` 배포 실수
 
@@ -228,7 +230,7 @@ Fill 단일 버튼을 맞추려고 `Dialog` 대신 토큰 클래스와 `Button`�
 | 파일 | 무엇을 바꿨는지 |
 |------|-----------------|
 | `src/pages/login.tsx` | admin일 때 일반 로그인 → me 조기 검사 → 통과 시만 SSO. Dialog 연결. Kakao 거절 플래그 소비. 성공 이동 `replace: true` |
-| `src/pages/authorize.tsx` | SSO me 이후 admin이면 게이트 토큰으로 me 재검사. 실패 시 Dialog 또는 `/login` 유도. 허브·로그인으로 보낼 때 `replace`. API authorize로 넘길 때 `location.replace` |
+| `src/pages/authorize.tsx` | SSO me 이후 admin이고 게이트 토큰이 있으면 me 재검사, 실패 시 Dialog. 게이트 토큰이 없으면 판별을 클라이언트 앱에 맡기고 그대로 authorize. 허브·로그인으로 보낼 때 `replace`. API authorize로 넘길 때 `location.replace` |
 | `src/pages/index.tsx` | 소셜 로그인 거절 시 Dialog가 보이도록 연결. “UMC 계정 로그인” 이동 `replace: true` |
 | `src/lib/oauth/useSocialLogin.tsx` | Google·Apple admin 조기 검사. Apple은 admin일 때 팝업 두 번 |
 | `src/lib/oauth/completeSsoSocialLogin.ts` | 소셜 성공 후 이동 옵션에 `replace: true` |
@@ -267,7 +269,7 @@ Fill 단일 버튼을 맞추려고 `Dialog` 대신 토큰 클래스와 `Button`�
 - `/login`에서 SSO 성공 후 `/authorize` 또는 `/`로 갈 때
 - 소셜 로그인 성공 후 `/authorize` 또는 `/`로 갈 때 (`socialSuccessNavigateOptions`)
 - 로그인 허브에서 “UMC 계정 로그인”으로 `/login`에 갈 때
-- `/authorize`에서 미로그인이라 `/`로 보낼 때, 게이트 토큰이 없어 `/login`으로 보낼 때
+- `/authorize`에서 미로그인이라 `/`로 보낼 때
 - Kakao 콜백에서 `/login`으로 되돌릴 때
 - 로그아웃 후 `/login`으로 갈 때
 
