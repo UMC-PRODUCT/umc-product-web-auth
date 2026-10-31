@@ -54,14 +54,10 @@ function AuthorizePage() {
         try {
           await fetchSsoSession()
 
-          if (shouldCheckAdminAccess(request.client_id)) {
-            const gateToken = readAdminGateAccessToken()
-            if (!gateToken) {
-              // 조기 검사 토큰이 없으면 운영진 여부를 알 수 없어 재로그인을 유도한다.
-              await denyAdminAccessAndClearSession()
-              await navigate({ to: "/login", replace: true })
-              return
-            }
+          const gateToken = readAdminGateAccessToken()
+          // 다른 서비스에서 이미 SSO 로그인한 경우에는 검사 토큰이 없다.
+          // 이때는 SSO 세션을 유지한 채 code를 발급하고, 운영진 판별은 클라이언트 앱에 맡긴다.
+          if (gateToken && shouldCheckAdminAccess(request.client_id)) {
             const decision = await evaluateAdminAccess(
               gateToken,
               request.client_id,
