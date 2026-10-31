@@ -11,6 +11,7 @@ import { useSocialLogin } from "@/lib/oauth/useSocialLogin"
 import { AdminAccessDeniedDialog } from "./-components/AdminAccessDeniedDialog"
 import { AuthSpinner } from "./-components/AuthSpinner"
 import { BrandLogo } from "./-components/BrandLogo"
+import { Copyright } from "./-components/Copyright"
 import { OAuthLoginButton, type OAuthProvider } from "./-components/OAuthButton"
 import { OrDivider } from "./-components/OrDivider"
 import { TextLinkPair } from "./-components/TextLinkPair"
@@ -20,7 +21,6 @@ export const Route = createFileRoute("/")({
 })
 
 const HUB_PROVIDERS: OAuthProvider[] = ["apple", "google", "kakao"]
-const COPYRIGHT = "© 2026 UMC Product All rights reserved."
 
 function LoginHubPage() {
   const navigate = useNavigate()
@@ -102,16 +102,8 @@ function LoginHubPage() {
   }
 
   return (
-    <div className="flex w-full max-w-[440px] flex-col items-center gap-8 px-10 py-8">
-      <div
-        className={`flex w-full max-w-[360px] flex-col items-center ${
-          audience === "activity"
-            ? "gap-10"
-            : audience === "admin"
-              ? "gap-8"
-              : "gap-16"
-        }`}
-      >
+    <div className="flex min-h-[500px] w-full max-w-[360px] flex-col items-center gap-8">
+      <div className="flex w-full flex-col items-center gap-8 md:gap-16">
         <BrandLogo audience={audience} surface="hub" />
         <div className="flex w-full flex-col items-center gap-4">
           <div className="flex w-full flex-col gap-3">
@@ -141,13 +133,12 @@ function LoginHubPage() {
               }
               brandLabel="회원가입"
               onBrandClick={() => navigate({ to: "/signup" })}
+              compactOnMobile
             />
           </div>
         </div>
       </div>
-      <p className="w-full text-center text-body-2-regular text-disabled">
-        {COPYRIGHT}
-      </p>
+      <Copyright />
       {deniedDialog}
     </div>
   )

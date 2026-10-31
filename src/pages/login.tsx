@@ -26,6 +26,7 @@ import { isValidEmail } from "@/lib/validation"
 
 import { AdminAccessDeniedDialog } from "./-components/AdminAccessDeniedDialog"
 import { BrandLogo } from "./-components/BrandLogo"
+import { Copyright } from "./-components/Copyright"
 import { OAuthIconButton, type OAuthProvider } from "./-components/OAuthButton"
 import { OrDivider } from "./-components/OrDivider"
 import { TextLinkPair } from "./-components/TextLinkPair"
@@ -104,11 +105,11 @@ function LoginPage() {
   }
 
   return (
-    <>
+    <div className="flex w-full max-w-[360px] flex-col items-center gap-8">
       <form
         noValidate
         onSubmit={handleSubmit}
-        className="flex w-full max-w-[360px] flex-col items-center gap-10"
+        className="flex w-full flex-col items-center gap-8 md:gap-10"
       >
         <BrandLogo audience={audience} surface="form" />
         <div className="flex w-full flex-col items-center gap-6">
@@ -151,7 +152,7 @@ function LoginPage() {
                 </GuidanceMessage>
               )}
             </div>
-            <div className="mt-2 flex w-full flex-col items-center gap-3.5">
+            <div className="mt-2 flex w-full flex-col items-center gap-4">
               <Button
                 type="submit"
                 variant={isFilled ? "fill" : "weak"}
@@ -189,10 +190,11 @@ function LoginPage() {
           </div>
         </div>
       </form>
+      <Copyright />
       <AdminAccessDeniedDialog
         open={adminDeniedOpen}
         onOpenChange={setAdminDeniedOpen}
       />
-    </>
+    </div>
   )
 }

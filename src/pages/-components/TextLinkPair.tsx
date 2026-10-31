@@ -5,6 +5,7 @@ type TextLinkPairProps = {
   onNeutralClick?: () => void
   brandLabel: string
   onBrandClick: () => void
+  compactOnMobile?: boolean
 }
 
 export function TextLinkPair({
@@ -12,14 +13,32 @@ export function TextLinkPair({
   onNeutralClick,
   brandLabel,
   onBrandClick,
+  compactOnMobile = false,
 }: TextLinkPairProps) {
+  const containerClassName = compactOnMobile
+    ? "flex items-center gap-2.5 md:gap-3"
+    : "flex items-center gap-3"
+  const labelClassName = compactOnMobile
+    ? "max-md:text-label-5-medium"
+    : undefined
+
   return (
-    <div className="flex items-center gap-3">
-      <TextButton color="neutral" size="xs" onClick={onNeutralClick}>
+    <div className={containerClassName}>
+      <TextButton
+        color="neutral"
+        size="xs"
+        className={labelClassName}
+        onClick={onNeutralClick}
+      >
         {neutralLabel}
       </TextButton>
       <Divider orientation="vertical" className="h-3" />
-      <TextButton color="brand" size="xs" onClick={onBrandClick}>
+      <TextButton
+        color="brand"
+        size="xs"
+        className={labelClassName}
+        onClick={onBrandClick}
+      >
         {brandLabel}
       </TextButton>
     </div>

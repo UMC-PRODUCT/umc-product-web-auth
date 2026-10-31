@@ -9,10 +9,16 @@ const PASSWORD_ALLOWED_CHARACTERS = /^[A-Za-z0-9!#$&*@?]*$/
 const PHONE_DIGITS_PATTERN = /^01[016-9]\d{7,8}$/
 const PHONE_MAX_DIGITS = 11
 
+const NICKNAME_PATTERN = /^[가-힣]{1,4}$/
+
 export const VERIFICATION_CODE_LENGTH = 6
 
 export function isValidEmail(email: string) {
   return email.length <= EMAIL_MAX_LENGTH && EMAIL_PATTERN.test(email)
+}
+
+export function isValidNickname(nickname: string) {
+  return NICKNAME_PATTERN.test(nickname.normalize("NFC"))
 }
 
 export type PasswordIssue = "policy" | "symbol"

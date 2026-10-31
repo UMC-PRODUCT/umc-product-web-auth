@@ -4,7 +4,7 @@ import activityLogo from "@/assets/brand/umc-activity-logo.svg"
 import operationLogo from "@/assets/brand/umc-operation-logo.svg"
 import { type LoginAudience } from "@/lib/login-audience"
 
-const LOGO_HEIGHT = 50
+const DESKTOP_LOGO_HEIGHT = 50
 const ADMIN_LOGO_HEIGHT = 45
 const ACTIVITY_LOGO_WIDTH = 191
 const ACTIVITY_LOGO_HEIGHT = 84
@@ -32,6 +32,7 @@ export function BrandLogo({
         alt="UMC ACTIVITY 11TH"
         width={ACTIVITY_LOGO_WIDTH}
         height={ACTIVITY_LOGO_HEIGHT}
+        className="h-[72.4px] w-auto md:h-[84px]"
       />
     )
   }
@@ -43,19 +44,20 @@ export function BrandLogo({
         alt="UMC OPERATION 11TH"
         width={OPERATION_LOGO_WIDTH}
         height={OPERATION_LOGO_HEIGHT}
+        className="h-[72.4px] w-auto md:h-[84px]"
       />
     )
   }
 
   if (audience === "admin") {
     return (
-      <div className="flex flex-col items-center gap-4">
+      <div className="flex flex-col items-center gap-3.5 md:gap-4">
         <UmcLogo
           height={ADMIN_LOGO_HEIGHT}
           aria-label="UMC"
-          className="text-teal-grey-700"
+          className="h-10 w-auto text-teal-grey-700 md:h-[45px]"
         />
-        <p className="text-center text-neutral-medium-600 text-title-3-medium">
+        <p className="text-center text-label-3-medium text-neutral-medium-600 md:text-title-3-medium">
           UMC 운영진 워크스페이스
         </p>
       </div>
@@ -65,11 +67,11 @@ export function BrandLogo({
   return (
     <div className="flex flex-col items-center gap-4">
       <UmcLogo
-        height={LOGO_HEIGHT}
+        height={DESKTOP_LOGO_HEIGHT}
         aria-label="UMC"
-        className="text-teal-grey-700"
+        className="h-10 w-auto text-teal-grey-700 md:h-[50px]"
       />
-      <p className="w-[264px] text-center text-label-5-medium text-neutral-strong-800">
+      <p className="text-center text-caption-2-medium text-neutral-strong-800 md:text-label-5-medium">
         UNIVERSITY MAKEUS CHALLENGE
       </p>
     </div>
