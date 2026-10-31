@@ -4,7 +4,6 @@ import { TanStackRouterVite } from "@tanstack/router-plugin/vite"
 import react from "@vitejs/plugin-react"
 import { defineConfig, loadEnv } from "vite"
 
-// TODO: SSO alpha api 호스트는 미확정이다. 이 값은 기존 개발 API 주소다.
 const DEFAULT_DEV_API_PROXY_TARGET = "https://api-dev.university.neordinary.com"
 
 export default defineConfig(({ mode }) => {
