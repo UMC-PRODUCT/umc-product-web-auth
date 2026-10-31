@@ -9,6 +9,8 @@ export type AuthRuntimeEnv = {
 }
 
 const PROD_AUTH_ORIGIN = "https://auth.university.neordinary.com"
+/** operations의 SSO stage 표(dev)와 같은 주소여야 한다. */
+const DEV_AUTH_ORIGIN = "https://dev.auth.university.neordinary.com"
 
 export function resolveAuthEnv(
   origin: string,
@@ -24,19 +26,31 @@ export function resolveAuthEnv(
   if (origin === PROD_AUTH_ORIGIN) {
     return {
       allowedReturnOrigins: [
-        "https://admin.university.neordinary.com",
         "https://university.neordinary.com",
+        "https://activity.university.neordinary.com",
+        "https://admin.university.neordinary.com",
       ],
       apiBaseUrl: "https://api.university.neordinary.com",
     }
   }
 
+  if (origin === DEV_AUTH_ORIGIN) {
+    return {
+      allowedReturnOrigins: [
+        "https://dev.university.neordinary.com",
+        "https://dev.activity.university.neordinary.com",
+        "https://dev.admin.university.neordinary.com",
+      ],
+      apiBaseUrl: "https://api-dev.university.neordinary.com",
+    }
+  }
+
+  // 표에 없는 배포(미리보기 등)는 env로만 설정한다.
   const apiBaseUrl = present(runtime.apiBaseUrl)
   const allowedReturnOrigins = splitOrigins(runtime.allowedReturnOrigins)
-  // TODO: 개발 배포 인증 앱의 origin, API 호스트, 허용 return origin은 미확정이다.
   if (!apiBaseUrl || allowedReturnOrigins.length === 0) {
     throw new Error(
-      "개발 인증 앱의 VITE_API_BASE_URL과 VITE_ALLOWED_RETURN_ORIGINS가 필요합니다. TODO: 개발 배포 주소는 미확정입니다.",
+      `${origin} 인증 앱에는 VITE_API_BASE_URL과 VITE_ALLOWED_RETURN_ORIGINS가 필요합니다.`,
     )
   }
 

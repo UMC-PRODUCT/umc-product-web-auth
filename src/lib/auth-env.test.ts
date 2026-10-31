@@ -13,15 +13,43 @@ describe("resolveAuthEnv", () => {
   it("uses the confirmed production origins", () => {
     expect(resolveAuthEnv("https://auth.university.neordinary.com")).toEqual({
       allowedReturnOrigins: [
-        "https://admin.university.neordinary.com",
         "https://university.neordinary.com",
+        "https://activity.university.neordinary.com",
+        "https://admin.university.neordinary.com",
       ],
       apiBaseUrl: "https://api.university.neordinary.com",
     })
   })
 
-  it("rejects an unknown origin when the dev env is missing", () => {
-    expect(() => resolveAuthEnv("https://auth-dev.example")).toThrow(/TODO/)
+  it("uses the dev service origins and dev api on the dev auth app", () => {
+    expect(
+      resolveAuthEnv("https://dev.auth.university.neordinary.com"),
+    ).toEqual({
+      allowedReturnOrigins: [
+        "https://dev.university.neordinary.com",
+        "https://dev.activity.university.neordinary.com",
+        "https://dev.admin.university.neordinary.com",
+      ],
+      apiBaseUrl: "https://api-dev.university.neordinary.com",
+    })
+  })
+
+  it("reads env for an origin outside the table", () => {
+    expect(
+      resolveAuthEnv("https://preview.example", {
+        allowedReturnOrigins: "https://a.example, https://b.example",
+        apiBaseUrl: "https://api.example",
+      }),
+    ).toEqual({
+      allowedReturnOrigins: ["https://a.example", "https://b.example"],
+      apiBaseUrl: "https://api.example",
+    })
+  })
+
+  it("rejects an origin outside the table when env is missing", () => {
+    expect(() => resolveAuthEnv("https://preview.example")).toThrow(
+      /VITE_ALLOWED_RETURN_ORIGINS/,
+    )
   })
 })
 
