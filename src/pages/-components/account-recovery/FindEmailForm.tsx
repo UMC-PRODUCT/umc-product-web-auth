@@ -1,24 +1,19 @@
-import {
-  Button,
-  TextFieldBox,
-  TextInfoButton,
-  VerificationCodeField,
-} from "@umc-product/react"
-import { type FormEvent, useState } from "react"
+import { Select, type SelectOption, TextFieldBox } from "@umc-product/react"
+import { type FormEvent, useEffect, useState } from "react"
 
 import {
   type FoundAccount,
   findEmail,
   isAuthError,
-  requestRecoveryCode,
+  listSchools,
 } from "@/api/authStub"
-import { useCodeVerification } from "@/lib/useCodeVerification"
 import { useServerErrorToast } from "@/lib/useServerErrorToast"
-import { formatPhone, isValidPhone, toPhoneDigits } from "@/lib/validation"
+import { isValidNickname } from "@/lib/validation"
 
-import { SmsCodeHelpDialog } from "../SmsCodeHelpDialog"
 import { AccountNotFoundDialog } from "./AccountNotFoundDialog"
 import { RecoveryFormActions } from "./RecoveryFormActions"
+
+const NICKNAME_RULE = "공백 없이 한글 1-4자"
 
 type FindEmailFormProps = {
   onFound: (account: FoundAccount) => void
@@ -26,36 +21,49 @@ type FindEmailFormProps = {
 
 export function FindEmailForm({ onFound }: FindEmailFormProps) {
   const showServerError = useServerErrorToast()
+  const [schoolOptions, setSchoolOptions] = useState<SelectOption[]>([])
+  const [schoolId, setSchoolId] = useState<string | null>(null)
   const [name, setName] = useState("")
-  const [phoneDigits, setPhoneDigits] = useState("")
-  const [isHelpOpen, setIsHelpOpen] = useState(false)
+  const [nickname, setNickname] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [isNotFoundOpen, setIsNotFoundOpen] = useState(false)
-  const verification = useCodeVerification(phoneDigits)
 
-  const canSend = isValidPhone(phoneDigits) && verification.needsNewCode
-  const canFind = name.trim() !== "" && verification.canVerify
+  useEffect(() => {
+    listSchools()
+      .then((schools) =>
+        setSchoolOptions(
+          schools.map(({ schoolId, schoolName }) => ({
+            value: schoolId,
+            label: schoolName,
+          })),
+        ),
+      )
+      .catch(showServerError)
+  }, [showServerError])
 
-  const sendCode = async () => {
-    try {
-      await verification.send(phoneDigits, requestRecoveryCode)
-    } catch {
-      showServerError()
-    }
-  }
+  const hasValidNickname = isValidNickname(nickname)
+  const canFind = schoolId !== null && name.trim() !== "" && hasValidNickname
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (schoolId === null || !canFind) return
+    setIsSubmitting(true)
     try {
-      const account = await verification.verify((code) =>
-        findEmail({ name, phoneDigits, code }),
+      onFound(
+        await findEmail({
+          schoolId,
+          name,
+          nickname: nickname.normalize("NFC"),
+        }),
       )
-      onFound(account)
     } catch (error) {
       if (isAuthError(error, "ACCOUNT_NOT_FOUND")) {
         setIsNotFoundOpen(true)
-      } else if (!isAuthError(error, "CODE_MISMATCH")) {
+      } else {
         showServerError()
       }
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -66,6 +74,14 @@ export function FindEmailForm({ onFound }: FindEmailFormProps) {
       className="flex w-full flex-col gap-3"
     >
       <div className="flex w-full flex-col gap-5">
+        <Select
+          label="학교"
+          placeholder="학교를 선택해주세요"
+          options={schoolOptions}
+          value={schoolId}
+          onValueChange={setSchoolId}
+          searchable
+        />
         <TextFieldBox
           label="이름"
           placeholder="김유엠"
@@ -74,58 +90,22 @@ export function FindEmailForm({ onFound }: FindEmailFormProps) {
           value={name}
           onChange={(event) => setName(event.target.value)}
         />
-        <div className="flex items-end gap-1.5">
-          <TextFieldBox
-            label="전화번호"
-            type="tel"
-            inputMode="numeric"
-            autoComplete="tel"
-            placeholder="010-0000-0000"
-            clearable={false}
-            value={formatPhone(phoneDigits)}
-            onChange={(event) =>
-              setPhoneDigits(toPhoneDigits(event.target.value))
-            }
-            className="flex-1"
-          />
-          <Button
-            type="button"
-            variant="weak"
-            color={canSend ? "brand" : "neutral"}
-            size="md"
-            disabled={!canSend}
-            isLoading={verification.pendingAction === "send"}
-            onClick={sendCode}
-            className="shrink-0"
-          >
-            인증하기
-          </Button>
-        </div>
-        <VerificationCodeField
-          label="인증 번호"
-          placeholder="숫자 6자리"
+        <TextFieldBox
+          label="닉네임"
+          placeholder="윰씨"
           clearable={false}
-          value={verification.code}
-          onChange={(event) => verification.changeCode(event.target.value)}
-          timer={verification.timer}
-          invalid={verification.codeError !== null}
-          errorMessage={verification.codeError}
-          info={
-            verification.sentTarget !== null && (
-              <TextInfoButton onClick={() => setIsHelpOpen(true)}>
-                인증 문자가 안왔나요?
-              </TextInfoButton>
-            )
-          }
-          className="min-h-[122px]"
+          value={nickname}
+          onChange={(event) => setNickname(event.target.value)}
+          caption={NICKNAME_RULE}
+          captionSize="lg"
+          captionColor={hasValidNickname ? "success" : "neutral"}
         />
       </div>
       <RecoveryFormActions
         submitLabel="이메일 찾기"
         canSubmit={canFind}
-        isSubmitting={verification.pendingAction === "verify"}
+        isSubmitting={isSubmitting}
       />
-      <SmsCodeHelpDialog open={isHelpOpen} onOpenChange={setIsHelpOpen} />
       <AccountNotFoundDialog
         open={isNotFoundOpen}
         onClose={() => setIsNotFoundOpen(false)}
