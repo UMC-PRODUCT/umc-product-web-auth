@@ -46,6 +46,11 @@ describe("shouldCheckAdminAccess", () => {
     expect(shouldCheckAdminAccess("backoffice", env)).toBe(true)
     expect(shouldCheckAdminAccess("website", env)).toBe(false)
   })
+
+  it("checks backoffice even when the admin env is missing", () => {
+    expect(shouldCheckAdminAccess("backoffice", {})).toBe(true)
+    expect(shouldCheckAdminAccess("local", {})).toBe(false)
+  })
 })
 
 describe("isOAuthRegisterRequired", () => {

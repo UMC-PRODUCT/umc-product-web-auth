@@ -24,6 +24,10 @@ describe("resolveLoginAudience", () => {
     expect(resolveLoginAudience("admin-local", env)).toBe("admin")
   })
 
+  it("maps backoffice to admin without any env", () => {
+    expect(resolveLoginAudience("backoffice", {})).toBe("admin")
+  })
+
   it("returns default for unknown client ids", () => {
     expect(resolveLoginAudience("web", env)).toBe("default")
   })
