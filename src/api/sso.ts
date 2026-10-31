@@ -2,7 +2,8 @@ import { apiRequest } from "./http"
 
 export type SsoSession = {
   expiresAt?: string
-  memberId?: number
+  /** API가 숫자·문자열 모두 줄 수 있어 비교 전에 숫자로 정규화한다. */
+  memberId?: number | string
 }
 
 export type SsoSocialLogin = SsoSession & {

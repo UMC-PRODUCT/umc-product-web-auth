@@ -16,6 +16,7 @@ import {
   isAdminReloginRequired,
   isOAuthRegisterRequired,
   logoutSsoAndClearAdminGate,
+  normalizeMemberId,
   readAdminGateAccessToken,
   saveAdminGateAccessToken,
   shouldCheckAdminAccess,
@@ -108,8 +109,16 @@ describe("admin gate member binding", () => {
 
   it("matches only the same sso member id", () => {
     expect(isAdminGateBoundToSsoMember(42, 42)).toBe(true)
+    expect(isAdminGateBoundToSsoMember(42, "42")).toBe(true)
     expect(isAdminGateBoundToSsoMember(42, 7)).toBe(false)
     expect(isAdminGateBoundToSsoMember(42, undefined)).toBe(false)
+  })
+
+  it("normalizes string member ids from sso me", () => {
+    expect(normalizeMemberId("2")).toBe(2)
+    expect(normalizeMemberId(2)).toBe(2)
+    expect(normalizeMemberId("")).toBeNull()
+    expect(normalizeMemberId(undefined)).toBeNull()
   })
 
   it("clears gate only after logout succeeds", async () => {

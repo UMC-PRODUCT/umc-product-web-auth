@@ -54,10 +54,11 @@ export async function evaluateAdminAccess(
   }
 
   const member = await fetchMemberMeV2(accessToken)
-  if (!canAccessAdminOps(member) || member.id == null) {
+  const memberId = normalizeMemberId(member.id)
+  if (!canAccessAdminOps(member) || memberId == null) {
     return { kind: "denied" }
   }
-  return { kind: "allowed", accessToken, memberId: member.id }
+  return { kind: "allowed", accessToken, memberId }
 }
 
 export function saveAdminGateAccessToken(
@@ -92,11 +93,26 @@ export function readAdminGateAccessToken(): AdminGateReadResult {
   return { kind: "invalid" }
 }
 
+/** SSO/회원 API가 memberId를 문자열로 주는 경우가 있어 number로 맞춘다. */
+export function normalizeMemberId(
+  value: number | string | null | undefined,
+): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value
+  }
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : null
+  }
+  return null
+}
+
 export function isAdminGateBoundToSsoMember(
   gateMemberId: number,
-  sessionMemberId: number | null | undefined,
+  sessionMemberId: number | string | null | undefined,
 ) {
-  return sessionMemberId != null && sessionMemberId === gateMemberId
+  const sessionId = normalizeMemberId(sessionMemberId)
+  return sessionId != null && sessionId === gateMemberId
 }
 
 export function clearAdminGateAccessToken() {
