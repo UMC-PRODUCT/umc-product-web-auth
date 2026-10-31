@@ -35,7 +35,8 @@ function LogoutPage() {
       }
       const { allowedReturnOrigins } = getAuthEnv()
       if (returnTo && isAllowedReturnTo(returnTo, allowedReturnOrigins)) {
-        window.location.assign(returnTo)
+        // /logout 이 히스토리에 남으면 뒤로가기로 다시 로그아웃이 돈다.
+        window.location.replace(returnTo)
         return
       }
       await navigate({ to: "/login", replace: true })
