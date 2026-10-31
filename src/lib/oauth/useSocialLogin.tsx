@@ -79,7 +79,7 @@ export function useSocialLogin() {
           return
         }
         if (decision.kind === "allowed") {
-          saveAdminGateAccessToken(decision.accessToken)
+          saveAdminGateAccessToken(decision.accessToken, decision.memberId)
         }
       }
 
@@ -121,7 +121,7 @@ export function useSocialLogin() {
           return
         }
         if (decision.kind === "allowed") {
-          saveAdminGateAccessToken(decision.accessToken)
+          saveAdminGateAccessToken(decision.accessToken, decision.memberId)
         }
         const second = await signInWithApple()
         const result = await loginBySsoApple(second.authorizationCode)

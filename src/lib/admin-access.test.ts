@@ -1,8 +1,12 @@
-import { describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it } from "vitest"
 
 import {
   canAccessAdminOps,
+  clearAdminGateAccessToken,
+  isAdminGateBoundToSsoMember,
   isOAuthRegisterRequired,
+  readAdminGateAccessToken,
+  saveAdminGateAccessToken,
   shouldCheckAdminAccess,
 } from "./admin-access"
 
@@ -67,5 +71,31 @@ describe("isOAuthRegisterRequired", () => {
         success: true,
       }),
     ).toBe(false)
+  })
+})
+
+describe("admin gate member binding", () => {
+  afterEach(() => {
+    clearAdminGateAccessToken()
+  })
+
+  it("stores access token with member id", () => {
+    saveAdminGateAccessToken("token", 42)
+    expect(readAdminGateAccessToken()).toEqual({
+      kind: "ok",
+      accessToken: "token",
+      memberId: 42,
+    })
+  })
+
+  it("treats legacy token-only values as invalid", () => {
+    sessionStorage.setItem("umc.auth.adminGateAccessToken", "legacy-token")
+    expect(readAdminGateAccessToken()).toEqual({ kind: "invalid" })
+  })
+
+  it("matches only the same sso member id", () => {
+    expect(isAdminGateBoundToSsoMember(42, 42)).toBe(true)
+    expect(isAdminGateBoundToSsoMember(42, 7)).toBe(false)
+    expect(isAdminGateBoundToSsoMember(42, undefined)).toBe(false)
   })
 })

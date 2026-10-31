@@ -10,9 +10,19 @@ const ADMIN_GATE_TOKEN_KEY = "umc.auth.adminGateAccessToken"
 const ADMIN_DENIED_FLAG_KEY = "umc.auth.adminAccessDenied"
 
 export type AdminAccessDecision =
-  | { kind: "allowed"; accessToken: string }
+  | { kind: "allowed"; accessToken: string; memberId: number }
   | { kind: "denied" }
   | { kind: "skipped" }
+
+export type AdminGatePayload = {
+  accessToken: string
+  memberId: number
+}
+
+export type AdminGateReadResult =
+  | { kind: "none" }
+  | { kind: "invalid" }
+  | ({ kind: "ok" } & AdminGatePayload)
 
 export function shouldCheckAdminAccess(
   clientId?: string | null,
@@ -41,18 +51,48 @@ export async function evaluateAdminAccess(
   }
 
   const member = await fetchMemberMeV2(accessToken)
-  if (!canAccessAdminOps(member)) {
+  if (!canAccessAdminOps(member) || member.id == null) {
     return { kind: "denied" }
   }
-  return { kind: "allowed", accessToken }
+  return { kind: "allowed", accessToken, memberId: member.id }
 }
 
-export function saveAdminGateAccessToken(accessToken: string) {
-  sessionStorage.setItem(ADMIN_GATE_TOKEN_KEY, accessToken)
+export function saveAdminGateAccessToken(
+  accessToken: string,
+  memberId: number,
+) {
+  const payload: AdminGatePayload = { accessToken, memberId }
+  sessionStorage.setItem(ADMIN_GATE_TOKEN_KEY, JSON.stringify(payload))
 }
 
-export function readAdminGateAccessToken() {
-  return sessionStorage.getItem(ADMIN_GATE_TOKEN_KEY)
+/** 게이트 토큰 + 바인딩된 SSO 회원 id. 구형(토큰만) 값은 invalid. */
+export function readAdminGateAccessToken(): AdminGateReadResult {
+  const raw = sessionStorage.getItem(ADMIN_GATE_TOKEN_KEY)
+  if (!raw) {
+    return { kind: "none" }
+  }
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      typeof (parsed as AdminGatePayload).accessToken === "string" &&
+      typeof (parsed as AdminGatePayload).memberId === "number"
+    ) {
+      const { accessToken, memberId } = parsed as AdminGatePayload
+      return { kind: "ok", accessToken, memberId }
+    }
+  } catch {
+    // 이전 형식(토큰 문자열만)은 회원 바인딩이 없어 재사용하지 않는다.
+  }
+  return { kind: "invalid" }
+}
+
+export function isAdminGateBoundToSsoMember(
+  gateMemberId: number,
+  sessionMemberId: number | null | undefined,
+) {
+  return sessionMemberId != null && sessionMemberId === gateMemberId
 }
 
 export function clearAdminGateAccessToken() {

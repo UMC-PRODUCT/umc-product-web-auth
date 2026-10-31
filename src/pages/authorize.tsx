@@ -7,6 +7,7 @@ import {
   clearAdminGateAccessToken,
   denyAdminAccessAndClearSession,
   evaluateAdminAccess,
+  isAdminGateBoundToSsoMember,
   readAdminGateAccessToken,
   shouldCheckAdminAccess,
 } from "@/lib/admin-access"
@@ -52,15 +53,28 @@ function AuthorizePage() {
       existing ??
       (async () => {
         try {
-          await fetchSsoSession()
+          const session = await fetchSsoSession()
 
-          const gateToken = readAdminGateAccessToken()
+          const gate = readAdminGateAccessToken()
           // 다른 서비스에서 이미 SSO 로그인한 경우에는 검사 토큰이 없다.
           // 이때는 SSO 세션을 유지한 채 code를 발급하고, 운영진 판별은 클라이언트 앱에 맡긴다.
-          if (gateToken && shouldCheckAdminAccess(request.client_id)) {
+          if (
+            shouldCheckAdminAccess(request.client_id) &&
+            gate.kind !== "none"
+          ) {
+            // 바인딩 불일치·구형 토큰: 토큰만 지우면 검사가 생략되므로 SSO를 끊고 재로그인을 요구한다.
+            if (
+              gate.kind === "invalid" ||
+              !isAdminGateBoundToSsoMember(gate.memberId, session.memberId)
+            ) {
+              await denyAdminAccessAndClearSession()
+              await navigate({ to: "/", replace: true })
+              return
+            }
+
             try {
               const decision = await evaluateAdminAccess(
-                gateToken,
+                gate.accessToken,
                 request.client_id,
               )
               if (decision.kind === "denied") {

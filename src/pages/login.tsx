@@ -80,7 +80,7 @@ function LoginPage() {
           return
         }
         if (decision.kind === "allowed") {
-          saveAdminGateAccessToken(decision.accessToken)
+          saveAdminGateAccessToken(decision.accessToken, decision.memberId)
         }
       }
 
