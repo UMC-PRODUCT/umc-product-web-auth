@@ -1,10 +1,21 @@
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
+
+import { ApiError } from "@/api/http"
+
+vi.mock("@/api/sso", () => ({
+  logoutSso: vi.fn(),
+}))
+
+import { logoutSso } from "@/api/sso"
 
 import {
   canAccessAdminOps,
   clearAdminGateAccessToken,
+  clearAdminReloginRequired,
   isAdminGateBoundToSsoMember,
+  isAdminReloginRequired,
   isOAuthRegisterRequired,
+  logoutSsoAndClearAdminGate,
   readAdminGateAccessToken,
   saveAdminGateAccessToken,
   shouldCheckAdminAccess,
@@ -77,6 +88,8 @@ describe("isOAuthRegisterRequired", () => {
 describe("admin gate member binding", () => {
   afterEach(() => {
     clearAdminGateAccessToken()
+    clearAdminReloginRequired()
+    vi.mocked(logoutSso).mockReset()
   })
 
   it("stores access token with member id", () => {
@@ -97,5 +110,29 @@ describe("admin gate member binding", () => {
     expect(isAdminGateBoundToSsoMember(42, 42)).toBe(true)
     expect(isAdminGateBoundToSsoMember(42, 7)).toBe(false)
     expect(isAdminGateBoundToSsoMember(42, undefined)).toBe(false)
+  })
+
+  it("clears gate only after logout succeeds", async () => {
+    saveAdminGateAccessToken("token", 42)
+    vi.mocked(logoutSso).mockResolvedValueOnce({})
+
+    await expect(logoutSsoAndClearAdminGate()).resolves.toEqual({ ok: true })
+    expect(readAdminGateAccessToken()).toEqual({ kind: "none" })
+    expect(isAdminReloginRequired()).toBe(false)
+  })
+
+  it("keeps gate and relogin flag when logout fails", async () => {
+    saveAdminGateAccessToken("token", 42)
+    vi.mocked(logoutSso).mockRejectedValueOnce(
+      new ApiError("logout failed", 500),
+    )
+
+    await expect(logoutSsoAndClearAdminGate()).resolves.toEqual({ ok: false })
+    expect(readAdminGateAccessToken()).toEqual({
+      kind: "ok",
+      accessToken: "token",
+      memberId: 42,
+    })
+    expect(isAdminReloginRequired()).toBe(true)
   })
 })

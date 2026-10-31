@@ -8,6 +8,9 @@ import {
 
 const ADMIN_GATE_TOKEN_KEY = "umc.auth.adminGateAccessToken"
 const ADMIN_DENIED_FLAG_KEY = "umc.auth.adminAccessDenied"
+const ADMIN_RELOGIN_REQUIRED_KEY = "umc.auth.adminReloginRequired"
+
+export type ClearAdminSessionResult = { ok: true } | { ok: false }
 
 export type AdminAccessDecision =
   | { kind: "allowed"; accessToken: string; memberId: number }
@@ -63,6 +66,7 @@ export function saveAdminGateAccessToken(
 ) {
   const payload: AdminGatePayload = { accessToken, memberId }
   sessionStorage.setItem(ADMIN_GATE_TOKEN_KEY, JSON.stringify(payload))
+  clearAdminReloginRequired()
 }
 
 /** 게이트 토큰 + 바인딩된 SSO 회원 id. 구형(토큰만) 값은 invalid. */
@@ -99,6 +103,18 @@ export function clearAdminGateAccessToken() {
   sessionStorage.removeItem(ADMIN_GATE_TOKEN_KEY)
 }
 
+export function markAdminReloginRequired() {
+  sessionStorage.setItem(ADMIN_RELOGIN_REQUIRED_KEY, "1")
+}
+
+export function clearAdminReloginRequired() {
+  sessionStorage.removeItem(ADMIN_RELOGIN_REQUIRED_KEY)
+}
+
+export function isAdminReloginRequired() {
+  return sessionStorage.getItem(ADMIN_RELOGIN_REQUIRED_KEY) === "1"
+}
+
 export function markAdminAccessDenied() {
   sessionStorage.setItem(ADMIN_DENIED_FLAG_KEY, "1")
 }
@@ -115,13 +131,26 @@ export function getUmcHomeUrl() {
   return fromEnv ? fromEnv : null
 }
 
-export async function denyAdminAccessAndClearSession() {
-  clearAdminGateAccessToken()
+/**
+ * SSO 로그아웃 성공이 확인된 뒤에만 게이트·재로그인 플래그를 지운다.
+ * 실패 시 게이트(또는 invalid 값)와 재로그인 필수 상태를 유지해
+ * /authorize 재진입 시 검사 생략을 막는다.
+ */
+export async function logoutSsoAndClearAdminGate(): Promise<ClearAdminSessionResult> {
+  markAdminReloginRequired()
   try {
     await logoutSso()
   } catch {
-    // 쿠키가 없어도 거절 UI는 보여야 한다.
+    return { ok: false }
   }
+  clearAdminGateAccessToken()
+  clearAdminReloginRequired()
+  return { ok: true }
+}
+
+/** 운영진 거절 UI용. logout 실패 시에도 Dialog는 호출부에서 보여줄 수 있다. */
+export async function denyAdminAccessAndClearSession(): Promise<ClearAdminSessionResult> {
+  return logoutSsoAndClearAdminGate()
 }
 
 export function isOAuthRegisterRequired(result: {
