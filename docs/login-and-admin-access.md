@@ -28,7 +28,9 @@
 
 `src/pages/authorize.tsx`는 쿼리 문자열이 있으면 필수 파라미터 여섯 개(`client_id`, `redirect_uri`, `response_type`, `state`, `code_challenge`, `code_challenge_method`)를 검증한 뒤 `sessionStorage` 키 `umc.auth.authorizeRequest`에 저장합니다. 이후 `GET /api/v1/auth/sso/me`로 SSO 쿠키 세션이 살아 있는지 확인합니다.
 
-세션이 없으면(대개 HTTP 401) 로그인 허브인 `/`로 보냅니다. 세션이 있으면, 아래 4절에서 설명하는 **운영진 검사**를 통과한 뒤에만 API의 `GET /api/v1/auth/sso/oauth/authorize?...` 주소로 브라우저를 통째로 이동시킵니다. 이 이동은 SPA 라우터가 아니라 `window.location.assign`이라서, 이후부터는 API 서버가 응답하는 리다이렉트를 따릅니다.
+세션이 없으면(대개 HTTP 401) 로그인 허브인 `/`로 보냅니다. 세션이 있으면 API의 `GET /api/v1/auth/sso/oauth/authorize?...` 주소로 브라우저를 통째로 이동시킵니다. 이 이동은 SPA 라우터가 아니라 `window.location.replace`라서, `/authorize` 칸이 히스토리에 남지 않고 이후부터는 API 서버가 응답하는 리다이렉트를 따릅니다.
+
+운영진 검사는 **게이트 토큰(`umc.auth.adminGateAccessToken`)이 있을 때만** 이 단계에서 수행합니다. 토큰이 없으면(다른 서비스에서 이미 SSO 로그인한 경우) `/login`으로 보내지 않고 SSO 세션을 유지한 채 인가를 이어 가며, 운영진 판별은 클라이언트 앱(operations `/_admin` 가드)이 맡습니다. 따라서 `/authorize`의 검사는 모든 SSO 세션의 최종 안전망이 아닙니다. 자세한 분기는 4.5절을 보면 됩니다.
 
 ### 2.3 로그인 허브와 이메일 로그인
 
@@ -86,7 +88,7 @@ Google과 Apple은 팝업으로 공급자 토큰(또는 Apple 인가 코드)을 
 
 ### 4.2 조기 검사의 위치와 이유
 
-인가 코드가 나가기 직전인 `/authorize`에서만 막으면, 이메일 로그인 직후 사용자가 잠깐 “로그인 확인 중” 같은 빈 화면에 머물렀다가 거절 UI를 보게 됩니다. 그래서 **admin audience일 때**는 로그인 성공 직후·`/authorize`로 보내기 **전에** 같은 판별을 한 번 수행합니다. 거절이면 Dialog를 그 자리에서 띄우고 authorize로 이동하지 않습니다. 소셜·이미 로그인된 채 `/authorize`만 다시 치는 경우를 막기 위해 `/authorize`에도 **최종 안전망**을 둡니다.
+인가 코드가 나가기 직전인 `/authorize`에서만 막으면, 이메일 로그인 직후 사용자가 잠깐 “로그인 확인 중” 같은 빈 화면에 머물렀다가 거절 UI를 보게 됩니다. 그래서 **admin audience일 때**는 로그인 성공 직후·`/authorize`로 보내기 **전에** 같은 판별을 한 번 수행합니다. 거절이면 Dialog를 그 자리에서 띄우고 authorize로 이동하지 않습니다. 조기 검사에서 저장한 게이트 토큰이 남아 있으면 `/authorize`에서도 같은 판별을 한 번 더 합니다. 게이트 토큰이 없으면 `/authorize`는 운영진을 막지 않고 인가를 이어 가므로, 모든 SSO 세션을 막는 최종 안전망은 아닙니다.
 
 판별 공통 로직은 `src/lib/admin-access.ts`에 있습니다.
 
@@ -211,7 +213,7 @@ Fill 단일 버튼을 맞추려고 `Dialog` 대신 토큰 클래스와 `Button`�
 
 운영진용 audience(`admin`, 환경 변수상 보통 `backoffice`)로 들어온 로그인에 대해, SSO만으로 바로 인가 코드를 넘기지 않고 **운영진 여부를 먼저 확인**하도록 바꿨습니다. 확인에 쓰는 값은 `GET /api/v2/member/me`의 `isSuperAdmin`과 `currentGisuMemberInfo.isAdmin`입니다. 액세스 토큰이 필요해서, 같은 자격으로 `POST /api/v1/auth/login/email`(또는 소셜 일반 로그인)을 한 번 더 친 뒤 통과할 때만 기존 `POST /api/v1/auth/sso/...`를 이어 갑니다.
 
-거절 시에는 `/authorize`로 보내지 않고, Figma에 맞춘 “운영진 권한이 없어요” Dialog를 띄웁니다. 이메일뿐 아니라 Google·Apple·Kakao에도 같은 판별을 넣었고, `/authorize`에는 조기 검사를 우회하지 못하도록 최종 검사를 남겼습니다.
+거절 시에는 `/authorize`로 보내지 않고, Figma에 맞춘 “운영진 권한이 없어요” Dialog를 띄웁니다. 이메일뿐 아니라 Google·Apple·Kakao에도 같은 판별을 넣었고, `/authorize`에는 게이트 토큰이 있을 때만 같은 검사를 다시 합니다.
 
 로그인·인가 과정의 **중간 화면이 브라우저 히스토리에 쌓여**, 클라이언트(예: `localhost:5173`)로 돌아간 뒤 뒤로가기를 누르면 `/login`이나 `/authorize`에 다시 떨어지는 문제를 줄이기 위해, 인증 앱 안의 이동과 API로 넘기는 구간에 **replace**를 적용했습니다. 자세한 배경과 한계는 아래 9.6절을 보면 됩니다.
 
@@ -236,14 +238,14 @@ Fill 단일 버튼을 맞추려고 `Dialog` 대신 토큰 클래스와 `Button`�
 | `src/lib/oauth/completeSsoSocialLogin.ts` | 소셜 성공 후 이동 옵션에 `replace: true` |
 | `src/pages/oauth/kakao/callback.tsx` | Kakao admin 조기 검사. 거절 시 플래그 후 `/login`(replace) |
 | `src/pages/logout.tsx` | 로그아웃 후 `/login` 이동 `replace: true` |
-| `.env` / `.env.example` | `VITE_LOGIN_CLIENT_IDS_ADMIN=backoffice` 안내, `VITE_UMC_HOME_URL` 선택 항목 |
+| `.env` / `.env.example` | `VITE_LOGIN_CLIENT_IDS_ADMIN`(추가 admin client용, 기본 `backoffice`는 코드 고정), `VITE_UMC_HOME_URL` 선택 항목 |
 | `src/vite-env.d.ts` | `VITE_UMC_HOME_URL` 타입 선언 |
 
 `src/lib/login-audience.ts`의 audience 해석 자체는 유지했고, **admin일 때 권한 검사를 켜는 쪽**에만 연결했습니다. SSO API 클라이언트(`src/api/sso.ts`)의 엔드포인트 목록은 그대로입니다.
 
 ### 9.4 환경 변수 관련 변경
 
-`VITE_LOGIN_CLIENT_IDS_ADMIN`을 서버에 등록된 `backoffice`에 맞추도록 했습니다. `VITE_UMC_HOME_URL`이 있으면 Dialog 버튼이 “UMC 홈으로”로 해당 주소에 이동하고, 없으면 “확인”으로 Dialog만 닫습니다. `VITE_LOGIN_UI_TEST`는 원래 로고용 강제값인데, 지금은 admin 강제 시 권한 검사도 함께 탑니다. 배포 빌드에는 비워 두어야 합니다.
+`backoffice`는 `BUILT_IN_ADMIN_CLIENT_IDS`에 코드로 고정되어 있고, `VITE_LOGIN_CLIENT_IDS_ADMIN`은 그 밖의 admin client_id를 더할 때만 씁니다. `VITE_UMC_HOME_URL`이 있으면 Dialog 버튼이 “UMC 홈으로”로 해당 주소에 이동하고, 없으면 “확인”으로 Dialog만 닫습니다. `VITE_LOGIN_UI_TEST`는 원래 로고용 강제값인데, 지금은 admin 강제 시 권한 검사도 함께 탑니다. 배포 빌드에는 비워 두어야 합니다.
 
 ### 9.5 이번에 하지 않은 것
 
@@ -279,4 +281,4 @@ Fill 단일 버튼을 맞추려고 `Dialog` 대신 토큰 클래스와 `Button`�
 
 클라이언트가 처음 인증 앱을 열 때 만드는 `/authorize` 진입 칸은, 그 이동을 시작한 쪽이 클라이언트입니다. 인증 앱이 나중에 SPA replace를 해도 “5173에서 5174로 넘어오며 생긴 첫 칸”의 성격까지 전부 지우지는 못할 수 있습니다. 클라이언트에서 IdP로 보낼 때 `location.replace`를 쓰는 것은 클라이언트 앱 설정 이슈입니다.
 
-또한 admin audience로 `/authorize`에 **다시** 들어왔을 때 게이트용 액세스 토큰이 없으면 `/login`으로 보내는 분기가 있습니다. 뒤로가기로 재진입하면 이 경로를 타 **로그인 화면에 머무는 느낌**이 날 수 있습니다. replace는 중간 칸을 줄이는 장치이고, “세션이 있으면 인증 화면에 머물지 않고 다시 인가를 이어 간다”는 처리는 별도로 보강할 여지가 있습니다.
+admin audience로 `/authorize`에 다시 들어왔을 때 게이트용 액세스 토큰이 없으면 `/login`으로 보내지 않고, SSO 세션을 유지한 채 API authorize로 이어 갑니다. 운영진 판별은 클라이언트 앱이 담당합니다. replace는 중간 칸을 줄이는 장치이고, “세션이 있으면 인증 화면에 머물지 않고 다시 인가를 이어 간다”는 처리는 이미 이 경로에 반영되어 있습니다.

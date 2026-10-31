@@ -1,5 +1,5 @@
 import { Button, Dimmed } from "@umc-product/react"
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
 
 import { getUmcHomeUrl } from "@/lib/admin-access"
@@ -21,16 +21,31 @@ export function AdminAccessDeniedDialog({
   onOpenChange,
 }: AdminAccessDeniedDialogProps) {
   const homeUrl = getUmcHomeUrl()
+  const dialogRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!open) return
 
+    const previousFocus =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = "hidden"
+
+    const focusConfirmButton = () => {
+      dialogRef.current?.querySelector<HTMLElement>("button")?.focus()
+    }
+    focusConfirmButton()
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         onOpenChange(false)
+        return
+      }
+      if (event.key === "Tab") {
+        event.preventDefault()
+        focusConfirmButton()
       }
     }
     window.addEventListener("keydown", onKeyDown)
@@ -38,6 +53,7 @@ export function AdminAccessDeniedDialog({
     return () => {
       document.body.style.overflow = previousOverflow
       window.removeEventListener("keydown", onKeyDown)
+      previousFocus?.focus()
     }
   }, [open, onOpenChange])
 
@@ -54,6 +70,7 @@ export function AdminAccessDeniedDialog({
       />
       <div className="umc-dialog__viewport">
         <div
+          ref={dialogRef}
           role="alertdialog"
           aria-modal="true"
           aria-labelledby="admin-access-denied-title"

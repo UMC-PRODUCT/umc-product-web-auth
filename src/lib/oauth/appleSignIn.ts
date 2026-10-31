@@ -4,12 +4,17 @@ export type AppleSignInResult = {
   authorizationCode: string
 }
 
+const APPLE_POPUP_CANCELLED_CODES = new Set([
+  "popup_closed_by_user",
+  "user_cancelled_authorize",
+])
+
 export function isApplePopupCancelled(error: unknown) {
   return (
     typeof error === "object" &&
     error !== null &&
     "error" in error &&
-    (error as { error: string }).error === "popup_closed_by_user"
+    APPLE_POPUP_CANCELLED_CODES.has((error as { error: string }).error)
   )
 }
 

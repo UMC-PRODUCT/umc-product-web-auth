@@ -55,18 +55,31 @@ function AuthorizePage() {
           await fetchSsoSession()
 
           const gateToken = readAdminGateAccessToken()
+          clearAdminGateAccessToken()
           // 다른 서비스에서 이미 SSO 로그인한 경우에는 검사 토큰이 없다.
           // 이때는 SSO 세션을 유지한 채 code를 발급하고, 운영진 판별은 클라이언트 앱에 맡긴다.
           if (gateToken && shouldCheckAdminAccess(request.client_id)) {
-            const decision = await evaluateAdminAccess(
-              gateToken,
-              request.client_id,
-            )
-            clearAdminGateAccessToken()
-            if (decision.kind === "denied") {
-              await denyAdminAccessAndClearSession()
+            try {
+              const decision = await evaluateAdminAccess(
+                gateToken,
+                request.client_id,
+              )
+              if (decision.kind === "denied") {
+                await denyAdminAccessAndClearSession()
+                setIsChecking(false)
+                setAdminDeniedOpen(true)
+                return
+              }
+            } catch (error) {
+              // 멤버 조회 401이 바깥 catch로 가면 SSO 미로그인으로 오인되어 `/`로 간다.
+              if (error instanceof ApiError && error.status === 401) {
+                await denyAdminAccessAndClearSession()
+                setIsChecking(false)
+                setAdminDeniedOpen(true)
+                return
+              }
               setIsChecking(false)
-              setAdminDeniedOpen(true)
+              setMessage("로그인 상태를 확인하지 못했습니다.")
               return
             }
           }

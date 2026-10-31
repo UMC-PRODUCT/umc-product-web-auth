@@ -33,11 +33,15 @@ function LogoutPage() {
       if (cancelled) {
         return
       }
-      const { allowedReturnOrigins } = getAuthEnv()
-      if (returnTo && isAllowedReturnTo(returnTo, allowedReturnOrigins)) {
-        // /logout 이 히스토리에 남으면 뒤로가기로 다시 로그아웃이 돈다.
-        window.location.replace(returnTo)
-        return
+      try {
+        const { allowedReturnOrigins } = getAuthEnv()
+        if (returnTo && isAllowedReturnTo(returnTo, allowedReturnOrigins)) {
+          // /logout 이 히스토리에 남으면 뒤로가기로 다시 로그아웃이 돈다.
+          window.location.replace(returnTo)
+          return
+        }
+      } catch {
+        // 설정 오류가 있어도 로그아웃 후 /login 으로 이어간다.
       }
       await navigate({ to: "/login", replace: true })
     })()

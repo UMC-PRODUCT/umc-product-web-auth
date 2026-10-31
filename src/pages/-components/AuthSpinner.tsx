@@ -14,7 +14,7 @@ export function AuthSpinner({ label = "로딩 중" }: AuthSpinnerProps) {
     >
       <span
         aria-hidden
-        className="box-border size-9 animate-spin rounded-full border-[3px] border-solid"
+        className="box-border size-9 rounded-full border-[3px] border-solid motion-safe:animate-spin motion-reduce:animate-pulse"
         style={{
           borderColor: "var(--umc-color-teal-100)",
           borderTopColor: "var(--umc-color-teal-600)",
