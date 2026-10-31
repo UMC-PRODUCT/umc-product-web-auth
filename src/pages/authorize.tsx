@@ -60,27 +60,9 @@ function AuthorizePage() {
           const session = await fetchSsoSession()
           const needsAdminCheck = shouldCheckAdminAccess(request.client_id)
           const gate = readAdminGateAccessToken()
-          const reloginRequired = isAdminReloginRequired()
-          const bound =
-            gate.kind === "ok" &&
-            isAdminGateBoundToSsoMember(gate.memberId, session.memberId)
 
-          // TODO(debug): 배포 원인 확인 후 제거
-          console.info("[authorize] session/gate", {
-            clientId: request.client_id,
-            needsAdminCheck,
-            reloginRequired,
-            sessionMemberId: session.memberId,
-            sessionMemberIdType: typeof session.memberId,
-            gate,
-            bound,
-            rawGate: sessionStorage.getItem("umc.auth.adminGateAccessToken"),
-          })
-
-          if (needsAdminCheck && reloginRequired) {
-            console.warn("[authorize] branch: reloginRequired → logout")
+          if (needsAdminCheck && isAdminReloginRequired()) {
             const cleared = await logoutSsoAndClearAdminGate()
-            console.info("[authorize] logout result", cleared)
             if (!cleared.ok) {
               setIsChecking(false)
               setMessage(SESSION_CHECK_FAILED_MESSAGE)
@@ -94,16 +76,11 @@ function AuthorizePage() {
           // 이때는 SSO 세션을 유지한 채 code를 발급하고, 운영진 판별은 클라이언트 앱에 맡긴다.
           if (needsAdminCheck && gate.kind !== "none") {
             // 바인딩 불일치·구형 토큰: 로그아웃 성공 전에는 게이트/플래그를 유지한다.
-            if (gate.kind === "invalid" || !bound) {
-              console.warn(
-                "[authorize] branch: gate invalid/unbound → logout",
-                {
-                  gateKind: gate.kind,
-                  bound,
-                },
-              )
+            if (
+              gate.kind === "invalid" ||
+              !isAdminGateBoundToSsoMember(gate.memberId, session.memberId)
+            ) {
               const cleared = await logoutSsoAndClearAdminGate()
-              console.info("[authorize] logout result", cleared)
               if (!cleared.ok) {
                 setIsChecking(false)
                 setMessage(SESSION_CHECK_FAILED_MESSAGE)
@@ -118,11 +95,8 @@ function AuthorizePage() {
                 gate.accessToken,
                 request.client_id,
               )
-              console.info("[authorize] evaluateAdminAccess", decision)
               if (decision.kind === "denied") {
-                console.warn("[authorize] branch: admin denied → logout")
                 const cleared = await denyAdminAccessAndClearSession()
-                console.info("[authorize] logout result", cleared)
                 setIsChecking(false)
                 setAdminDeniedOpen(true)
                 if (!cleared.ok) {
@@ -133,9 +107,7 @@ function AuthorizePage() {
             } catch (error) {
               // 멤버 조회 401이 바깥 catch로 가면 SSO 미로그인으로 오인되어 `/`로 간다.
               if (error instanceof ApiError && error.status === 401) {
-                console.warn("[authorize] branch: evaluate 401 → logout", error)
                 const cleared = await denyAdminAccessAndClearSession()
-                console.info("[authorize] logout result", cleared)
                 setIsChecking(false)
                 setAdminDeniedOpen(true)
                 if (!cleared.ok) {
@@ -144,10 +116,6 @@ function AuthorizePage() {
                 return
               }
               // 일시 오류: 게이트 토큰을 유지해 재시도 시 검사가 생략되지 않게 한다.
-              console.warn(
-                "[authorize] branch: evaluate transient error",
-                error,
-              )
               setIsChecking(false)
               setMessage(SESSION_CHECK_FAILED_MESSAGE)
               return
@@ -158,14 +126,12 @@ function AuthorizePage() {
           clearAdminGateAccessToken()
           clearAdminReloginRequired()
 
-          const next = authorizeUrl(getAuthEnv().apiBaseUrl, request)
-          console.info("[authorize] branch: proceed to api authorize", next)
-
           // assign 이면 /authorize 가 히스토리에 남아, 클라이언트에서
           // 뒤로가기 시 다시 이 화면으로 온다. replace 로 현재 칸을 덮는다.
-          window.location.replace(next)
+          window.location.replace(
+            authorizeUrl(getAuthEnv().apiBaseUrl, request),
+          )
         } catch (error) {
-          console.warn("[authorize] outer catch", error)
           if (error instanceof ApiError && error.status === 401) {
             await navigate({ to: "/", replace: true })
             return

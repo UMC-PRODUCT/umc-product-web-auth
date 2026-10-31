@@ -80,14 +80,7 @@ function LoginPage() {
           return
         }
         if (decision.kind === "allowed") {
-          // TODO(debug): 배포 원인 확인 후 제거
-          console.info("[login] saveAdminGateAccessToken", {
-            memberId: decision.memberId,
-            memberIdType: typeof decision.memberId,
-          })
           saveAdminGateAccessToken(decision.accessToken, decision.memberId)
-        } else {
-          console.info("[login] evaluateAdminAccess", decision)
         }
       }
 
