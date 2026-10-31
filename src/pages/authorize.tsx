@@ -55,7 +55,6 @@ function AuthorizePage() {
           await fetchSsoSession()
 
           const gateToken = readAdminGateAccessToken()
-          clearAdminGateAccessToken()
           // 다른 서비스에서 이미 SSO 로그인한 경우에는 검사 토큰이 없다.
           // 이때는 SSO 세션을 유지한 채 code를 발급하고, 운영진 판별은 클라이언트 앱에 맡긴다.
           if (gateToken && shouldCheckAdminAccess(request.client_id)) {
@@ -78,11 +77,15 @@ function AuthorizePage() {
                 setAdminDeniedOpen(true)
                 return
               }
+              // 일시 오류: 게이트 토큰을 유지해 재시도 시 검사가 생략되지 않게 한다.
               setIsChecking(false)
               setMessage("로그인 상태를 확인하지 못했습니다.")
               return
             }
           }
+
+          // 허용(또는 검사 불필요)이 확정된 뒤에만 게이트 토큰을 삭제한다.
+          clearAdminGateAccessToken()
 
           // assign 이면 /authorize 가 히스토리에 남아, 클라이언트에서
           // 뒤로가기 시 다시 이 화면으로 온다. replace 로 현재 칸을 덮는다.
