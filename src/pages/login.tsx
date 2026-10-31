@@ -5,13 +5,26 @@ import {
   GuidanceMessage,
   TextFieldBox,
 } from "@umc-product/react"
-import { type FormEvent, useState } from "react"
+import { type FormEvent, useEffect, useState } from "react"
 
-import { isAuthError, loginByEmail } from "@/api/authStub"
+import { loginByEmailCredential } from "@/api/credential-auth"
+import { ApiError } from "@/api/http"
+import { loginBySsoEmail } from "@/api/sso"
+import {
+  consumeAdminAccessDeniedFlag,
+  denyAdminAccessAndClearSession,
+  evaluateAdminAccess,
+  saveAdminGateAccessToken,
+  shouldCheckAdminAccess,
+} from "@/lib/admin-access"
+import { readAuthorizeRequest } from "@/lib/authorize-request"
+import { resolveLoginAudience } from "@/lib/login-audience"
 import { EMAIL_FORMAT_ERROR } from "@/lib/messages"
+import { useSocialLogin } from "@/lib/oauth/useSocialLogin"
 import { useServerErrorToast } from "@/lib/useServerErrorToast"
 import { isValidEmail } from "@/lib/validation"
 
+import { AdminAccessDeniedDialog } from "./-components/AdminAccessDeniedDialog"
 import { BrandLogo } from "./-components/BrandLogo"
 import { Copyright } from "./-components/Copyright"
 import { OAuthIconButton, type OAuthProvider } from "./-components/OAuthButton"
@@ -28,6 +41,9 @@ const INVALID_CREDENTIALS_MESSAGE = "아이디 또는 비밀번호가 올바르�
 function LoginPage() {
   const navigate = useNavigate()
   const showServerError = useServerErrorToast()
+  const { pendingProvider, start, adminDeniedOpen, setAdminDeniedOpen } =
+    useSocialLogin()
+  const audience = resolveLoginAudience(readAuthorizeRequest()?.client_id)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [hasEmailError, setHasEmailError] = useState(false)
@@ -35,6 +51,12 @@ function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const isFilled = email !== "" && password !== ""
+
+  useEffect(() => {
+    if (consumeAdminAccessDeniedFlag()) {
+      setAdminDeniedOpen(true)
+    }
+  }, [setAdminDeniedOpen])
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -44,9 +66,35 @@ function LoginPage() {
     }
     setIsSubmitting(true)
     try {
-      await loginByEmail(email, password)
+      const clientId = readAuthorizeRequest()?.client_id
+
+      if (shouldCheckAdminAccess(clientId)) {
+        const credential = await loginByEmailCredential(email, password)
+        const decision = await evaluateAdminAccess(
+          credential.accessToken,
+          clientId,
+        )
+        if (decision.kind === "denied") {
+          await denyAdminAccessAndClearSession()
+          setAdminDeniedOpen(true)
+          return
+        }
+        if (decision.kind === "allowed") {
+          saveAdminGateAccessToken(decision.accessToken, decision.memberId)
+        }
+      }
+
+      await loginBySsoEmail(email, password)
+      if (readAuthorizeRequest()) {
+        await navigate({ to: "/authorize", replace: true })
+      } else {
+        await navigate({ to: "/", replace: true })
+      }
     } catch (error) {
-      if (isAuthError(error, "INVALID_CREDENTIALS")) {
+      if (
+        error instanceof ApiError &&
+        (error.status === 401 || error.code === "AUTHENTICATION-0022")
+      ) {
         setHasCredentialsError(true)
       } else {
         showServerError()
@@ -63,7 +111,7 @@ function LoginPage() {
         onSubmit={handleSubmit}
         className="flex w-full flex-col items-center gap-8 md:gap-10"
       >
-        <BrandLogo />
+        <BrandLogo audience={audience} surface="form" />
         <div className="flex w-full flex-col items-center gap-6">
           <div className="flex w-full flex-col items-center">
             <div className="flex w-full flex-col gap-3">
@@ -111,7 +159,7 @@ function LoginPage() {
                 color="brand"
                 size="md"
                 className="w-full"
-                isLoading={isSubmitting}
+                isLoading={isSubmitting || pendingProvider !== null}
               >
                 로그인
               </Button>
@@ -132,13 +180,21 @@ function LoginPage() {
             <OrDivider />
             <div className="flex justify-center gap-8">
               {LOGIN_PROVIDERS.map((provider) => (
-                <OAuthIconButton key={provider} provider={provider} />
+                <OAuthIconButton
+                  key={provider}
+                  provider={provider}
+                  onClick={() => start(provider)}
+                />
               ))}
             </div>
           </div>
         </div>
       </form>
       <Copyright />
+      <AdminAccessDeniedDialog
+        open={adminDeniedOpen}
+        onOpenChange={setAdminDeniedOpen}
+      />
     </div>
   )
 }

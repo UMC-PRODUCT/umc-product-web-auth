@@ -10,14 +10,22 @@
 
 import { Route as rootRouteImport } from './pages/__root'
 import { Route as SignupRouteImport } from './pages/signup'
+import { Route as LogoutRouteImport } from './pages/logout'
 import { Route as LoginRouteImport } from './pages/login'
 import { Route as ChallengerRouteImport } from './pages/challenger'
+import { Route as AuthorizeRouteImport } from './pages/authorize'
 import { Route as AccountRecoveryRouteImport } from './pages/account-recovery'
 import { Route as IndexRouteImport } from './pages/index'
+import { Route as OauthKakaoCallbackRouteImport } from './pages/oauth/kakao/callback'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LogoutRoute = LogoutRouteImport.update({
+  id: '/logout',
+  path: '/logout',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -30,6 +38,11 @@ const ChallengerRoute = ChallengerRouteImport.update({
   path: '/challenger',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthorizeRoute = AuthorizeRouteImport.update({
+  id: '/authorize',
+  path: '/authorize',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AccountRecoveryRoute = AccountRecoveryRouteImport.update({
   id: '/account-recovery',
   path: '/account-recovery',
@@ -40,49 +53,85 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OauthKakaoCallbackRoute = OauthKakaoCallbackRouteImport.update({
+  id: '/oauth/kakao/callback',
+  path: '/oauth/kakao/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/account-recovery': typeof AccountRecoveryRoute
+  '/authorize': typeof AuthorizeRoute
   '/challenger': typeof ChallengerRoute
   '/login': typeof LoginRoute
+  '/logout': typeof LogoutRoute
   '/signup': typeof SignupRoute
+  '/oauth/kakao/callback': typeof OauthKakaoCallbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account-recovery': typeof AccountRecoveryRoute
+  '/authorize': typeof AuthorizeRoute
   '/challenger': typeof ChallengerRoute
   '/login': typeof LoginRoute
+  '/logout': typeof LogoutRoute
   '/signup': typeof SignupRoute
+  '/oauth/kakao/callback': typeof OauthKakaoCallbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/account-recovery': typeof AccountRecoveryRoute
+  '/authorize': typeof AuthorizeRoute
   '/challenger': typeof ChallengerRoute
   '/login': typeof LoginRoute
+  '/logout': typeof LogoutRoute
   '/signup': typeof SignupRoute
+  '/oauth/kakao/callback': typeof OauthKakaoCallbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/account-recovery' | '/challenger' | '/login' | '/signup'
+  fullPaths:
+    | '/'
+    | '/account-recovery'
+    | '/authorize'
+    | '/challenger'
+    | '/login'
+    | '/logout'
+    | '/signup'
+    | '/oauth/kakao/callback'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/account-recovery' | '/challenger' | '/login' | '/signup'
+  to:
+    | '/'
+    | '/account-recovery'
+    | '/authorize'
+    | '/challenger'
+    | '/login'
+    | '/logout'
+    | '/signup'
+    | '/oauth/kakao/callback'
   id:
     | '__root__'
     | '/'
     | '/account-recovery'
+    | '/authorize'
     | '/challenger'
     | '/login'
+    | '/logout'
     | '/signup'
+    | '/oauth/kakao/callback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountRecoveryRoute: typeof AccountRecoveryRoute
+  AuthorizeRoute: typeof AuthorizeRoute
   ChallengerRoute: typeof ChallengerRoute
   LoginRoute: typeof LoginRoute
+  LogoutRoute: typeof LogoutRoute
   SignupRoute: typeof SignupRoute
+  OauthKakaoCallbackRoute: typeof OauthKakaoCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -92,6 +141,13 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/logout': {
+      id: '/logout'
+      path: '/logout'
+      fullPath: '/logout'
+      preLoaderRoute: typeof LogoutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -108,6 +164,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChallengerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/authorize': {
+      id: '/authorize'
+      path: '/authorize'
+      fullPath: '/authorize'
+      preLoaderRoute: typeof AuthorizeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/account-recovery': {
       id: '/account-recovery'
       path: '/account-recovery'
@@ -122,15 +185,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/oauth/kakao/callback': {
+      id: '/oauth/kakao/callback'
+      path: '/oauth/kakao/callback'
+      fullPath: '/oauth/kakao/callback'
+      preLoaderRoute: typeof OauthKakaoCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountRecoveryRoute: AccountRecoveryRoute,
+  AuthorizeRoute: AuthorizeRoute,
   ChallengerRoute: ChallengerRoute,
   LoginRoute: LoginRoute,
+  LogoutRoute: LogoutRoute,
   SignupRoute: SignupRoute,
+  OauthKakaoCallbackRoute: OauthKakaoCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

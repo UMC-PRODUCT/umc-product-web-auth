@@ -1,8 +1,69 @@
 import { UmcLogo } from "@umc-product/icons"
 
-const DESKTOP_LOGO_HEIGHT = 50
+import activityLogo from "@/assets/brand/umc-activity-logo.svg"
+import operationLogo from "@/assets/brand/umc-operation-logo.svg"
+import { type LoginAudience } from "@/lib/login-audience"
 
-export function BrandLogo() {
+const DESKTOP_LOGO_HEIGHT = 50
+const ADMIN_LOGO_HEIGHT = 45
+const ACTIVITY_LOGO_WIDTH = 191
+const ACTIVITY_LOGO_HEIGHT = 84
+const OPERATION_LOGO_WIDTH = 222
+const OPERATION_LOGO_HEIGHT = 84
+
+type BrandLogoProps = {
+  audience?: LoginAudience
+  /**
+   * hub(`/`): Admin = UmcLogo + 운영진 워크스페이스.
+   * form(`/login`): Admin = OPERATION 11TH 워드마크 SVG (Activity SVG와 동일 계열).
+   * default / activity 는 hub·form 동일.
+   */
+  surface?: "hub" | "form"
+}
+
+export function BrandLogo({
+  audience = "default",
+  surface = "form",
+}: BrandLogoProps) {
+  if (audience === "activity") {
+    return (
+      <img
+        src={activityLogo}
+        alt="UMC ACTIVITY 11TH"
+        width={ACTIVITY_LOGO_WIDTH}
+        height={ACTIVITY_LOGO_HEIGHT}
+        className="h-[72.4px] w-auto md:h-[84px]"
+      />
+    )
+  }
+
+  if (audience === "admin" && surface === "form") {
+    return (
+      <img
+        src={operationLogo}
+        alt="UMC OPERATION 11TH"
+        width={OPERATION_LOGO_WIDTH}
+        height={OPERATION_LOGO_HEIGHT}
+        className="h-[72.4px] w-auto md:h-[84px]"
+      />
+    )
+  }
+
+  if (audience === "admin") {
+    return (
+      <div className="flex flex-col items-center gap-3.5 md:gap-4">
+        <UmcLogo
+          height={ADMIN_LOGO_HEIGHT}
+          aria-label="UMC"
+          className="h-10 w-auto text-teal-grey-700 md:h-[45px]"
+        />
+        <p className="text-center text-label-3-medium text-neutral-medium-600 md:text-title-3-medium">
+          UMC 운영진 워크스페이스
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col items-center gap-4">
       <UmcLogo
@@ -10,7 +71,7 @@ export function BrandLogo() {
         aria-label="UMC"
         className="h-10 w-auto text-teal-grey-700 md:h-[50px]"
       />
-      <p className="text-caption-2-medium text-neutral-strong-800 md:text-label-5-medium">
+      <p className="text-center text-caption-2-medium text-neutral-strong-800 md:text-label-5-medium">
         UNIVERSITY MAKEUS CHALLENGE
       </p>
     </div>
