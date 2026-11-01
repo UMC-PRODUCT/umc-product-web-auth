@@ -18,12 +18,16 @@ export function isApplePopupCancelled(error: unknown) {
   )
 }
 
+/** Apple 콘솔 Return URL에 등록된 현재 origin과 맞춘다. (예: http://localhost:5174/) */
+export function getAppleRedirectUri() {
+  return `${window.location.origin}/`
+}
+
 export async function signInWithApple(): Promise<AppleSignInResult> {
   const clientId = import.meta.env.VITE_APPLE_CLIENT_ID?.trim()
-  const redirectURI = import.meta.env.VITE_APPLE_REDIRECT_URI?.trim()
 
-  if (!clientId || !redirectURI) {
-    throw new Error("Apple Sign In 환경변수가 설정되지 않았습니다.")
+  if (!clientId) {
+    throw new Error("VITE_APPLE_CLIENT_ID가 설정되지 않았습니다.")
   }
 
   await loadAppleSdk()
@@ -34,7 +38,7 @@ export async function signInWithApple(): Promise<AppleSignInResult> {
 
   window.AppleID.auth.init({
     clientId,
-    redirectURI,
+    redirectURI: getAppleRedirectUri(),
     scope: "name email",
     usePopup: true,
   })
