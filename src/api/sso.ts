@@ -35,11 +35,14 @@ export function loginBySsoGoogle(token: {
 }
 
 export function loginBySsoKakao(token: {
+  idToken: string
   accessToken?: string
-  idToken?: string
 }) {
   return apiRequest<SsoSocialLogin>("/api/v1/auth/sso/kakao", {
-    body: JSON.stringify(token),
+    body: JSON.stringify({
+      idToken: token.idToken,
+      ...(token.accessToken ? { accessToken: token.accessToken } : {}),
+    }),
     method: "POST",
   })
 }
