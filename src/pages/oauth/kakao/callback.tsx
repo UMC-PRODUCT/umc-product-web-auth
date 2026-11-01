@@ -71,10 +71,19 @@ function KakaoCallbackPage() {
     void (async () => {
       try {
         const tokens = await exchangeKakaoAuthorizationCode(code)
+        if (!tokens.idToken) {
+          showError(FAILED_MESSAGE)
+          return
+        }
+
         const clientId = readAuthorizeRequest()?.client_id
 
+        // 이메일·Google과 동일: admin audience면 UMC 토큰으로 운영진 여부를 먼저 확인
         if (shouldCheckAdminAccess(clientId)) {
-          const credential = await loginByKakaoCredential(tokens)
+          const credential = await loginByKakaoCredential({
+            idToken: tokens.idToken,
+            accessToken: tokens.accessToken,
+          })
           if (isOAuthRegisterRequired(credential)) {
             if (credential.oAuthVerificationToken) {
               saveOAuthVerificationToken(credential.oAuthVerificationToken)
@@ -97,7 +106,8 @@ function KakaoCallbackPage() {
           }
         }
 
-        const result = await loginBySsoKakao(tokens)
+        // Auth App SSO 세션 (UMC_SSO_LOGIN 쿠키)
+        const result = await loginBySsoKakao({ idToken: tokens.idToken })
         const outcome = resolveSsoSocialLogin(result)
         if (outcome.kind === "register_required") {
           showError(REGISTER_REQUIRED_MESSAGE)

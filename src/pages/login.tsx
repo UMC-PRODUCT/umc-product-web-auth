@@ -21,6 +21,7 @@ import { readAuthorizeRequest } from "@/lib/authorize-request"
 import { resolveLoginAudience } from "@/lib/login-audience"
 import { EMAIL_FORMAT_ERROR } from "@/lib/messages"
 import { useSocialLogin } from "@/lib/oauth/useSocialLogin"
+import { useFeatureNotReadyToast } from "@/lib/useFeatureNotReadyToast"
 import { useServerErrorToast } from "@/lib/useServerErrorToast"
 import { isValidEmail } from "@/lib/validation"
 
@@ -41,6 +42,7 @@ const INVALID_CREDENTIALS_MESSAGE = "아이디 또는 비밀번호가 올바르�
 function LoginPage() {
   const navigate = useNavigate()
   const showServerError = useServerErrorToast()
+  const showFeatureNotReady = useFeatureNotReadyToast()
   const { pendingProvider, start, adminDeniedOpen, setAdminDeniedOpen } =
     useSocialLogin()
   const audience = resolveLoginAudience(readAuthorizeRequest()?.client_id)
@@ -165,14 +167,9 @@ function LoginPage() {
               </Button>
               <TextLinkPair
                 neutralLabel="계정 찾기"
-                onNeutralClick={() =>
-                  navigate({
-                    to: "/account-recovery",
-                    search: { tab: "email" },
-                  })
-                }
+                onNeutralClick={showFeatureNotReady}
                 brandLabel="회원가입"
-                onBrandClick={() => navigate({ to: "/signup" })}
+                onBrandClick={showFeatureNotReady}
               />
             </div>
           </div>

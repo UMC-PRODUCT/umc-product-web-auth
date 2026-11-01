@@ -35,12 +35,12 @@ export function socialSuccessNavigateOptions(next: "/authorize" | "/") {
 }
 
 export async function completeKakaoSsoLogin(params: {
-  accessToken: string
-  idToken?: string
+  idToken: string
+  accessToken?: string
 }) {
   const result = await loginBySsoKakao({
-    accessToken: params.accessToken,
     idToken: params.idToken,
+    accessToken: params.accessToken,
   })
   return resolveSsoSocialLogin(result)
 }
