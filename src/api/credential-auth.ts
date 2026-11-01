@@ -44,6 +44,21 @@ export function loginByGoogleCredential(token: {
   })
 }
 
+/** 운영진 게이트용. SSO 쿠키는 /sso/kakao 를 쓴다. */
+export function loginByKakaoCredential(token: {
+  idToken: string
+  accessToken?: string
+}) {
+  return apiRequest<OAuthLogin>("/api/v1/auth/login/kakao", {
+    body: JSON.stringify({
+      idToken: token.idToken,
+      ...(token.accessToken ? { accessToken: token.accessToken } : {}),
+      clientType: WEB_CLIENT,
+    }),
+    method: "POST",
+  })
+}
+
 export function loginByAppleCredential(authorizationCode: string) {
   return apiRequest<OAuthLogin>("/api/v1/auth/login/apple", {
     body: JSON.stringify({
