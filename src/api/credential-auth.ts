@@ -44,20 +44,6 @@ export function loginByGoogleCredential(token: {
   })
 }
 
-export function loginByKakaoCredential(token: {
-  accessToken?: string
-  idToken?: string
-}) {
-  return apiRequest<OAuthLogin>("/api/v1/auth/login/kakao", {
-    body: JSON.stringify({
-      accessToken: token.accessToken,
-      idToken: token.idToken,
-      clientType: WEB_CLIENT,
-    }),
-    method: "POST",
-  })
-}
-
 export function loginByAppleCredential(authorizationCode: string) {
   return apiRequest<OAuthLogin>("/api/v1/auth/login/apple", {
     body: JSON.stringify({

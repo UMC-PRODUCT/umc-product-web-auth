@@ -3,17 +3,7 @@ import { CheckCircleIcon } from "@umc-product/icons"
 import { useToast } from "@umc-product/react"
 import { useEffect, useRef } from "react"
 
-import { loginByKakaoCredential } from "@/api/credential-auth"
-import { loginBySsoKakao, saveOAuthVerificationToken } from "@/api/sso"
-import {
-  denyAdminAccessAndClearSession,
-  evaluateAdminAccess,
-  isOAuthRegisterRequired,
-  markAdminAccessDenied,
-  saveAdminGateAccessToken,
-  shouldCheckAdminAccess,
-} from "@/lib/admin-access"
-import { readAuthorizeRequest } from "@/lib/authorize-request"
+import { loginBySsoKakao } from "@/api/sso"
 import {
   resolveSsoSocialLogin,
   socialSuccessNavigateOptions,
@@ -70,34 +60,15 @@ function KakaoCallbackPage() {
 
     void (async () => {
       try {
+        // ①②: 카카오 인가 코드 → 토큰 교환 (기존과 동일)
         const tokens = await exchangeKakaoAuthorizationCode(code)
-        const clientId = readAuthorizeRequest()?.client_id
-
-        if (shouldCheckAdminAccess(clientId)) {
-          const credential = await loginByKakaoCredential(tokens)
-          if (isOAuthRegisterRequired(credential)) {
-            if (credential.oAuthVerificationToken) {
-              saveOAuthVerificationToken(credential.oAuthVerificationToken)
-            }
-            showError(REGISTER_REQUIRED_MESSAGE)
-            return
-          }
-          const decision = await evaluateAdminAccess(
-            credential.accessToken,
-            clientId,
-          )
-          if (decision.kind === "denied") {
-            await denyAdminAccessAndClearSession()
-            markAdminAccessDenied()
-            await navigate({ to: "/login", replace: true })
-            return
-          }
-          if (decision.kind === "allowed") {
-            saveAdminGateAccessToken(decision.accessToken, decision.memberId)
-          }
+        if (!tokens.idToken) {
+          showError(FAILED_MESSAGE)
+          return
         }
 
-        const result = await loginBySsoKakao(tokens)
+        // ③: Auth App은 /login/kakao 가 아니라 SSO API (UMC_SSO_LOGIN 쿠키)
+        const result = await loginBySsoKakao({ idToken: tokens.idToken })
         const outcome = resolveSsoSocialLogin(result)
         if (outcome.kind === "register_required") {
           showError(REGISTER_REQUIRED_MESSAGE)
