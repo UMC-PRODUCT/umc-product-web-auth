@@ -3,7 +3,17 @@ import { CheckCircleIcon } from "@umc-product/icons"
 import { useToast } from "@umc-product/react"
 import { useEffect, useRef } from "react"
 
-import { loginBySsoKakao } from "@/api/sso"
+import { loginByKakaoCredential } from "@/api/credential-auth"
+import { loginBySsoKakao, saveOAuthVerificationToken } from "@/api/sso"
+import {
+  denyAdminAccessAndClearSession,
+  evaluateAdminAccess,
+  isOAuthRegisterRequired,
+  markAdminAccessDenied,
+  saveAdminGateAccessToken,
+  shouldCheckAdminAccess,
+} from "@/lib/admin-access"
+import { readAuthorizeRequest } from "@/lib/authorize-request"
 import {
   resolveSsoSocialLogin,
   socialSuccessNavigateOptions,
@@ -60,14 +70,43 @@ function KakaoCallbackPage() {
 
     void (async () => {
       try {
-        // ①②: 카카오 인가 코드 → 토큰 교환 (기존과 동일)
         const tokens = await exchangeKakaoAuthorizationCode(code)
         if (!tokens.idToken) {
           showError(FAILED_MESSAGE)
           return
         }
 
-        // ③: Auth App은 /login/kakao 가 아니라 SSO API (UMC_SSO_LOGIN 쿠키)
+        const clientId = readAuthorizeRequest()?.client_id
+
+        // 이메일·Google과 동일: admin audience면 UMC 토큰으로 운영진 여부를 먼저 확인
+        if (shouldCheckAdminAccess(clientId)) {
+          const credential = await loginByKakaoCredential({
+            idToken: tokens.idToken,
+            accessToken: tokens.accessToken,
+          })
+          if (isOAuthRegisterRequired(credential)) {
+            if (credential.oAuthVerificationToken) {
+              saveOAuthVerificationToken(credential.oAuthVerificationToken)
+            }
+            showError(REGISTER_REQUIRED_MESSAGE)
+            return
+          }
+          const decision = await evaluateAdminAccess(
+            credential.accessToken,
+            clientId,
+          )
+          if (decision.kind === "denied") {
+            await denyAdminAccessAndClearSession()
+            markAdminAccessDenied()
+            await navigate({ to: "/login", replace: true })
+            return
+          }
+          if (decision.kind === "allowed") {
+            saveAdminGateAccessToken(decision.accessToken, decision.memberId)
+          }
+        }
+
+        // Auth App SSO 세션 (UMC_SSO_LOGIN 쿠키)
         const result = await loginBySsoKakao({ idToken: tokens.idToken })
         const outcome = resolveSsoSocialLogin(result)
         if (outcome.kind === "register_required") {

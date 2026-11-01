@@ -1,0 +1,75 @@
+---
+title: "fix: 카카오 로그인을 Auth App용 SSO idToken API로 전환한다"
+base: develop
+head: feat/sso-login
+---
+
+## 📸 작업 내용
+
+> 작업한 내용을 두괄식으로 작성해주세요
+
+- Auth App 카카오 최종 로그인을 웹 SSO용 `POST /api/v1/auth/sso/kakao`(`idToken`)로 바꿔 `UMC_SSO_LOGIN` 쿠키가 발급되도록 했습니다.
+- admin audience에서는 이메일·Google과 같이 `POST /api/v1/auth/login/kakao`로 UMC 토큰을 받은 뒤 `/api/v2/member/me` 운영진 게이트를 통과한 다음 SSO를 호출합니다.
+- `apiRequest`의 `credentials: "include"`로 SSO 쿠키를 수신합니다.
+
+## 🎞️ 주요 코드 설명
+
+> 설명이 필요한 코드 위주로 작성해주세요
+
+### 카카오 콜백 → (admin 게이트) → SSO
+
+```TypeScript
+const tokens = await exchangeKakaoAuthorizationCode(code)
+
+if (shouldCheckAdminAccess(clientId)) {
+  const credential = await loginByKakaoCredential({ idToken: tokens.idToken })
+  const decision = await evaluateAdminAccess(credential.accessToken, clientId)
+  // denied → Dialog / allowed → saveAdminGateAccessToken
+}
+
+const result = await loginBySsoKakao({ idToken: tokens.idToken })
+```
+
+- SSO는 항상 `/sso/kakao`로 쿠키를 발급합니다. admin일 때만 `/login/kakao`로 운영진 여부를 먼저 확인합니다.
+
+### SSO Kakao 요청 body
+
+```TypeScript
+export function loginBySsoKakao(token: {
+  idToken: string
+  accessToken?: string
+}) {
+  return apiRequest<SsoSocialLogin>("/api/v1/auth/sso/kakao", {
+    body: JSON.stringify({
+      idToken: token.idToken,
+      ...(token.accessToken ? { accessToken: token.accessToken } : {}),
+    }),
+    method: "POST",
+  })
+}
+```
+
+- Auth App은 `idToken`을 필수로 보냅니다. `apiRequest`는 이미 `credentials: "include"`라 별도 설정이 필요 없습니다.
+
+## 🖥️ 구현화면
+
+> localhost 캡쳐 사진을 첨부해 주세요.
+
+| 카카오 로그인 콜백 | SSO 로그인 성공 후 |
+| :----------------: | :----------------: |
+| <img src = "" width ="250"> | <img src = "" width ="250"> |
+
+## 🔗 연결된 이슈
+
+> 해결한 이슈 번호를 작성하고 이슈가 해결되었다면 해결 여부에 체크해주세요! (Ex. #4)
+
+- Connected: #이슈번호
+
+## 📚 참고자료
+
+- [새 auth 웹 카카오 로그인 수정](https://tundra-cricket-4dd.notion.site/40b6ec41660580f88324e750f3df9441?pvs=73)
+
+## 💬 기타 더 이야기해볼 점
+
+- 서버가 JS 키로 발급된 카카오 `idToken`도 검증하도록 배포된 뒤에야 `/login/kakao`·`/sso/kakao` 모두 정상 동작합니다.
+- Google·Apple은 기존에도 동일 패턴의 운영진 게이트가 있었고, 이번엔 빠져 있던 카카오 경로를 맞췄습니다.
