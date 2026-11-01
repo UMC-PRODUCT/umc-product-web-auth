@@ -8,7 +8,6 @@ interface ImportMetaEnv {
   readonly VITE_KAKAO_APP_KEY?: string
   readonly VITE_KAKAO_REST_API_KEY?: string
   readonly VITE_APPLE_CLIENT_ID?: string
-  readonly VITE_APPLE_REDIRECT_URI?: string
   /** 쉼표로 구분. Activity 로그인 허브 브랜딩에 매핑되는 OAuth client_id */
   readonly VITE_LOGIN_CLIENT_IDS_ACTIVITY?: string
   /** 쉼표로 구분. Admin(운영진) 로그인 허브 브랜딩에 매핑되는 OAuth client_id */
