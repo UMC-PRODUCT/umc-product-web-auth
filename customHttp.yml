@@ -1,5 +1,6 @@
 customHeaders:
   - pattern: "**/*"
     headers:
+      # Apple JS 팝업 로그인은 부모 페이지 origin을 확인하므로 no-referrer를 쓰면 안 된다. origin만 보내는 정책을 쓴다.
       - key: Referrer-Policy
-        value: no-referrer
+        value: strict-origin-when-cross-origin
