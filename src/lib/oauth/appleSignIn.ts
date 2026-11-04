@@ -18,9 +18,9 @@ export function isApplePopupCancelled(error: unknown) {
   )
 }
 
-/** Apple 콘솔 Return URL에 등록된 현재 origin과 맞춘다. (예: http://localhost:5174/) */
+/** Apple 콘솔 Return URL에 등록된 현재 origin과 맞춘다. (예: http://localhost:5174) */
 export function getAppleRedirectUri() {
-  return `${window.location.origin}/`
+  return `${window.location.origin}`
 }
 
 export async function signInWithApple(): Promise<AppleSignInResult> {
