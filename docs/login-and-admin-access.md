@@ -42,8 +42,6 @@
 
 Google과 Apple은 팝업으로 공급자 토큰(또는 Apple 인가 코드)을 받은 뒤, 각각 `POST /api/v1/auth/sso/google`, `POST /api/v1/auth/sso/apple`로 SSO 세션을 만듭니다. Kakao는 인증 앱의 `/oauth/kakao/callback`으로 리다이렉트한 뒤, Kakao 토큰을 교환하고 `POST /api/v1/auth/sso/kakao`를 호출합니다. 공통 판정은 `src/lib/oauth/completeSsoSocialLogin.ts`에 있으며, 미가입이면 `oAuthVerificationToken`을 `sessionStorage`에 저장하고 가입 유도 안내를 띄운 뒤 authorize로 보내지 않습니다. 가입된 계정이면 authorize 요청 유무에 따라 `/authorize` 또는 `/`로 갑니다.
 
-Apple은 `usePopup` 모드라 Referrer-Policy가 `no-referrer`이면 팝업에서 "Invalid web redirect url"이 납니다. 교차 출처에는 origin만 보내는 `strict-origin-when-cross-origin`을 씁니다. `redirectURI`는 `{origin}/oauth/apple/callback`이며 Apple 콘솔 Return URL과 글자 단위로 같아야 합니다. localhost는 Apple이 허용하지 않으므로 dev 배포본에서 테스트합니다.
-
 ### 2.5 로그아웃
 
 `/logout`은 `POST /api/v1/auth/sso/logout`으로 쿠키를 지운 뒤, 허용된 `return_to` origin이면 그곳으로, 아니면 `/login`으로 보냅니다.
