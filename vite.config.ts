@@ -30,8 +30,7 @@ export default defineConfig(({ mode }) => {
       port: 5174,
       strictPort: true,
       headers: {
-        // Apple JS 팝업 로그인은 부모 페이지 origin을 확인하므로 no-referrer를 쓰면 안 된다. origin만 보내는 정책을 쓴다.
-        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "Referrer-Policy": "no-referrer",
       },
       proxy: {
         "/api": {
@@ -55,8 +54,7 @@ export default defineConfig(({ mode }) => {
     },
     preview: {
       headers: {
-        // Apple JS 팝업 로그인은 부모 페이지 origin을 확인하므로 no-referrer를 쓰면 안 된다. origin만 보내는 정책을 쓴다.
-        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "Referrer-Policy": "no-referrer",
       },
     },
   }

@@ -18,13 +18,9 @@ export function isApplePopupCancelled(error: unknown) {
   )
 }
 
-/**
- * Apple 콘솔 Return URL과 글자 단위로 맞춘다.
- * 등록 예: https://dev.auth.university.neordinary.com/oauth/apple/callback
- * usePopup이라 콜백 페이지는 없어도 된다.
- */
+/** Apple 콘솔 Return URL에 등록된 현재 origin과 맞춘다. (예: http://localhost:5174/) */
 export function getAppleRedirectUri() {
-  return `${window.location.origin}/oauth/apple/callback`
+  return `${window.location.origin}/`
 }
 
 export async function signInWithApple(): Promise<AppleSignInResult> {
