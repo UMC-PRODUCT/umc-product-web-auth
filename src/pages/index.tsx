@@ -7,7 +7,6 @@ import { fetchSsoSession, type SsoSession } from "@/api/sso"
 import { readAuthorizeRequest } from "@/lib/authorize-request"
 import { resolveLoginAudience } from "@/lib/login-audience"
 import { useSocialLogin } from "@/lib/oauth/useSocialLogin"
-import { useFeatureNotReadyToast } from "@/lib/useFeatureNotReadyToast"
 
 import { AdminAccessDeniedDialog } from "./-components/AdminAccessDeniedDialog"
 import { AuthSpinner } from "./-components/AuthSpinner"
@@ -25,7 +24,6 @@ const HUB_PROVIDERS: OAuthProvider[] = ["apple", "google", "kakao"]
 
 function LoginHubPage() {
   const navigate = useNavigate()
-  const showFeatureNotReady = useFeatureNotReadyToast()
   const { start, adminDeniedOpen, setAdminDeniedOpen } = useSocialLogin()
   const audience = resolveLoginAudience(readAuthorizeRequest()?.client_id)
   const [session, setSession] = useState<SsoSession | null | undefined>(
@@ -130,9 +128,11 @@ function LoginHubPage() {
             </Button>
             <TextLinkPair
               neutralLabel="계정 찾기"
-              onNeutralClick={showFeatureNotReady}
+              onNeutralClick={() =>
+                navigate({ to: "/account-recovery", search: { tab: "email" } })
+              }
               brandLabel="회원가입"
-              onBrandClick={showFeatureNotReady}
+              onBrandClick={() => navigate({ to: "/signup" })}
               compactOnMobile
             />
           </div>
